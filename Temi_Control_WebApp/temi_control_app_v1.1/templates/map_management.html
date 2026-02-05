@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Map Management - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-map"></i> Map Management
+            </h2>
+            <p class="text-muted">Upload and manage map images for robot navigation and position tracking</p>
+        </div>
+    </div>
+
+    <!-- Robot Selection -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label class="form-label">Select Robot</label>
+            <select id="robotSelect" class="form-select">
+                <option value="">Loading robots...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Map Display & Upload Area -->
+    <div class="row">
+        <!-- Current Map Display -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-map"></i> Current Map
+                </div>
+                <div class="card-body">
+                    <div id="mapContainer" style="position: relative; width: 100%; height: 500px; background: #f0f0f0; border-radius: 5px; display: flex; align-items: center; justify-content: center;">
+                        <div class="text-center">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No map uploaded yet</p>
+                            <small class="text-muted">Upload a map image to display here</small>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <p><strong>Map Dimensions:</strong></p>
+                                <p id="mapDimensions" class="text-muted">-</p>
+                            </div>
+                            <div class="col-6">
+                                <p><strong>Scale:</strong></p>
+                                <p id="mapScale" class="text-muted">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-cloud-upload"></i> Upload Map
+                </div>
+                <div class="card-body">
+                    <form id="mapUploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="mapImageInput" class="form-label">Select Image File</label>
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="mapImageInput"
+                                name="map_image"
+                                accept=".png,.jpg,.jpeg"
+                                required
+                            >
+                            <small class="text-muted d-block mt-2">
+                                Supported formats: PNG, JPG, JPEG (max 10MB)
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="mapPixelsPerMeter" class="form-label">Pixels Per Meter</label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="mapPixelsPerMeter"
+                                value="50"
+                                min="10"
+                                max="500"
+                            >
+                            <small class="text-muted">
+                                Controls how map coordinates scale to world coordinates
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="mapOriginX" class="form-label">Origin X (pixels)</label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="mapOriginX"
+                                value="0"
+                            >
+                            <small class="text-muted">X coordinate of map origin</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="mapOriginY" class="form-label">Origin Y (pixels)</label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="mapOriginY"
+                                value="0"
+                            >
+                            <small class="text-muted">Y coordinate of map origin</small>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn btn-success w-100"
+                            id="uploadMapBtn"
+                            disabled
+                        >
+                            <i class="bi bi-upload"></i> Upload Map
+                        </button>
+                    </form>
+
+                    <div id="uploadProgress" class="mt-3" style="display: none;">
+                        <div class="progress">
+                            <div
+                                class="progress-bar progress-bar-striped progress-bar-animated"
+                                role="progressbar"
+                                style="width: 0%"
+                                id="uploadProgressBar"
+                            ></div>
+                        </div>
+                        <small class="text-muted d-block mt-2">Uploading...</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Info Card -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-info-circle"></i> About Map Scale
+                </div>
+                <div class="card-body">
+                    <p class="small">
+                        The <strong>Pixels Per Meter</strong> value determines how the robot's real-world
+                        coordinates (in meters) are transformed to canvas coordinates (in pixels).
+                    </p>
+                    <p class="small mb-0">
+                        <strong>Example:</strong> If a robot moves 1 meter in the world, it should move 50 pixels on the map.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waypoints Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-geo-alt"></i> Waypoints on Map
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Waypoints will appear here once you load a robot's data and navigate to the position tracking page.</p>
+                    <small>Use the map editor on the Position Tracking page to manage waypoints.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Upload Success Modal -->
+<div class="modal fade" id="mapUploadSuccessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle"></i> Map Uploaded Successfully
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Your map has been uploaded and saved.</p>
+                <div id="mapUploadInfo"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/map_management.js') }}"></script>
+{% endblock %}

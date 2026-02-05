@@ -1561,6 +1561,15 @@ def position_tracking_page():
                          username=session.get('username'))
 
 
+@app.route('/map-management')
+@login_required
+def map_management_page():
+    """Map management page"""
+    robots_list = db.get_all_robots()
+    return render_template('map_management.html', robots=robots_list,
+                         username=session.get('username'))
+
+
 @app.route('/schedules')
 @login_required
 def schedules_page():
@@ -2290,6 +2299,201 @@ def api_custom_mqtt():
         db.add_activity_log(robot_id, 'info', f'Custom MQTT: {topic}')
         return jsonify({'success': True})
     return jsonify({'success': False, 'error': 'Failed to send MQTT command'}), 500
+
+
+# Volume Control Endpoint
+@app.route('/api/command/volume', methods=['POST'])
+@login_required
+def api_set_volume():
+    """Set robot volume via MQTT"""
+    try:
+        data = request.json or {}
+        robot_id = data.get('robot_id')
+        volume = data.get('volume')
+
+        if not robot_id:
+            return jsonify({'success': False, 'error': 'robot_id required'}), 400
+
+        if volume is None:
+            return jsonify({'success': False, 'error': 'volume required'}), 400
+
+        # Validate range (0-100)
+        try:
+            volume = int(volume)
+            if volume < 0 or volume > 100:
+                return jsonify({'success': False, 'error': 'Volume must be 0-100'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Volume must be a number'}), 400
+
+        robot = db.get_robot(robot_id)
+        if not robot:
+            return jsonify({'success': False, 'error': 'Robot not found'}), 404
+
+        if not ensure_robot_connected(robot_id):
+            return jsonify({'success': False, 'error': 'Robot is not connected to MQTT'}), 400
+
+        # Publish volume command via MQTT
+        if mqtt_manager.publish_volume(robot_id, volume):
+            # Store volume setting in database
+            db.set_robot_setting(robot_id, 'volume_level', str(volume))
+
+            # Log activity
+            db.add_activity_log(robot_id, 'info', f'Set volume to {volume}%')
+
+            # Emit to all connected clients
+            emit_socketio('volume_changed', {
+                'robot_id': robot_id,
+                'volume': volume,
+                'timestamp': datetime.now().isoformat()
+            })
+
+            return jsonify({'success': True, 'volume': volume})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to publish MQTT command'}), 500
+
+    except Exception as e:
+        logger.error(f'Error setting volume: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# Get Current Volume Setting
+@app.route('/api/robots/<int:robot_id>/volume', methods=['GET'])
+@login_required
+def api_get_volume(robot_id):
+    """Get robot's volume setting"""
+    try:
+        robot = db.get_robot(robot_id)
+        if not robot:
+            return jsonify({'success': False, 'error': 'Robot not found'}), 404
+
+        # Get stored volume level (default to 50)
+        volume = int(db.get_robot_setting(robot_id, 'volume_level', '50'))
+
+        return jsonify({'success': True, 'volume': volume})
+    except Exception as e:
+        logger.error(f'Error getting volume: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# System Control - Restart Robot
+@app.route('/api/command/system/restart', methods=['POST'])
+@login_required
+def api_restart_robot():
+    """Restart the robot"""
+    try:
+        data = request.json or {}
+        robot_id = data.get('robot_id')
+
+        if not robot_id:
+            return jsonify({'success': False, 'error': 'robot_id required'}), 400
+
+        robot = db.get_robot(robot_id)
+        if not robot:
+            return jsonify({'success': False, 'error': 'Robot not found'}), 404
+
+        if not ensure_robot_connected(robot_id):
+            return jsonify({'success': False, 'error': 'Robot is not connected to MQTT'}), 400
+
+        # Log critical action
+        db.add_activity_log(robot_id, 'critical', 'System restart initiated')
+
+        # Publish restart command
+        if mqtt_manager.publish_system_command(robot_id, 'restart'):
+            # Update robot state
+            db.set_robot_setting(robot_id, 'state', 'restarting')
+
+            emit_socketio('robot_restarting', {
+                'robot_id': robot_id,
+                'message': 'Robot is restarting... (approximately 30 seconds)',
+                'timestamp': datetime.now().isoformat()
+            })
+
+            # Start background monitoring for reconnection
+            def monitor_restart():
+                start_time = time.time()
+                timeout = 60  # 60 second timeout
+                while time.time() - start_time < timeout:
+                    time.sleep(5)
+                    current_robot = db.get_robot(robot_id)
+                    if current_robot and current_robot.get('is_connected'):
+                        # Robot reconnected
+                        db.set_robot_setting(robot_id, 'state', 'ready')
+                        emit_socketio('robot_restarted', {
+                            'robot_id': robot_id,
+                            'message': 'Robot has successfully restarted and reconnected!',
+                            'timestamp': datetime.now().isoformat()
+                        })
+                        return
+
+                # Timeout - robot didn't reconnect
+                emit_socketio('robot_restart_timeout', {
+                    'robot_id': robot_id,
+                    'message': 'Robot did not reconnect after restart. Please check manually.',
+                    'timestamp': datetime.now().isoformat()
+                })
+
+            monitoring_thread = threading.Thread(target=monitor_restart, daemon=True)
+            monitoring_thread.start()
+
+            return jsonify({
+                'success': True,
+                'message': 'Restart command sent. Robot will reconnect in ~30 seconds.'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to publish restart command'}), 500
+
+    except Exception as e:
+        logger.error(f'Error restarting robot: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# System Control - Shutdown Robot
+@app.route('/api/command/system/shutdown', methods=['POST'])
+@login_required
+def api_shutdown_robot():
+    """Shutdown the robot"""
+    try:
+        data = request.json or {}
+        robot_id = data.get('robot_id')
+
+        if not robot_id:
+            return jsonify({'success': False, 'error': 'robot_id required'}), 400
+
+        robot = db.get_robot(robot_id)
+        if not robot:
+            return jsonify({'success': False, 'error': 'Robot not found'}), 404
+
+        # Log critical action with IP for audit trail
+        user = session.get('username', 'unknown')
+        ip_address = request.remote_addr
+        db.add_activity_log(
+            robot_id,
+            'critical',
+            f'System shutdown initiated by {user} from {ip_address}'
+        )
+
+        # Publish shutdown command only if connected
+        if robot.get('is_connected'):
+            if not mqtt_manager.publish_system_command(robot_id, 'shutdown'):
+                return jsonify({'success': False, 'error': 'Failed to publish shutdown command'}), 500
+
+        # Update state
+        db.set_robot_setting(robot_id, 'state', 'shutting_down')
+
+        emit_socketio('robot_shutting_down', {
+            'robot_id': robot_id,
+            'message': 'Shutdown command sent. Robot is powering off.',
+            'timestamp': datetime.now().isoformat()
+        })
+
+        return jsonify({
+            'success': True,
+            'message': 'Shutdown initiated. Robot will power off.'
+        })
+
+    except Exception as e:
+        logger.error(f'Error shutting down robot: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # YOLO API Routes
