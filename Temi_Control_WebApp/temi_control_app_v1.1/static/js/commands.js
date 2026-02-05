@@ -3,6 +3,8 @@
  */
 
 let selectedRobotId = null;
+let selectedRobotSerial = null;
+let temiCommands = null;
 let commandHistory = [];
 const COMMAND_HISTORY_KEY = 'temi_command_history';
 
@@ -17,6 +19,21 @@ function setupEventHandlers() {
     // Robot selection
     document.getElementById('selectedRobotId').addEventListener('change', function() {
         selectedRobotId = this.value ? parseInt(this.value) : null;
+
+        // Fetch robot serial number for SDK commands
+        if (selectedRobotId) {
+            appUtils.apiCall(`/api/robots/${selectedRobotId}`).then(response => {
+                if (response.success) {
+                    selectedRobotSerial = response.robot.serial_number;
+                    temiCommands = new TemiSDKCommands(selectedRobotSerial);
+                    console.log(`[Commands] Initialized TemiSDKCommands for robot ${selectedRobotSerial}`);
+                }
+            });
+        } else {
+            selectedRobotSerial = null;
+            temiCommands = null;
+        }
+
         updateRobotStatus();
     });
 
@@ -590,16 +607,40 @@ function sendStatusCommand() {
         return;
     }
 
-    appUtils.apiCall(`/api/robots/${selectedRobotId}`).then(response => {
-        if (response.success) {
-            const robot = response.robot;
-            const statusMsg = `Battery: ${robot.battery_level}%, Location: ${robot.current_location || 'Unknown'}`;
-            appUtils.showToast(statusMsg, 'info');
-            addCommandToHistory('Request Status', 'success', statusMsg);
-        } else {
-            appUtils.showToast('Failed to get robot status', 'danger');
-            addCommandToHistory('Request Status', 'failed');
+    if (!temiCommands) {
+        appUtils.showToast('Initializing SDK commands...', 'warning');
+        return;
+    }
+
+    appUtils.showToast('Requesting robot status from SDK...', 'info');
+
+    // Request both battery and ready status
+    Promise.all([
+        temiCommands.getBattery().catch(e => ({ error: e.message })),
+        temiCommands.isReady().catch(e => ({ error: e.message }))
+    ]).then(([batteryResponse, readyResponse]) => {
+        console.log('[Commands] Status responses:', { batteryResponse, readyResponse });
+
+        const statusParts = [];
+        if (batteryResponse && batteryResponse.success) {
+            statusParts.push('Battery check sent');
         }
+        if (readyResponse && readyResponse.success) {
+            statusParts.push('Ready status sent');
+        }
+
+        if (statusParts.length > 0) {
+            const statusMsg = statusParts.join(', ') + ' - check MQTT monitor for responses';
+            appUtils.showToast(statusMsg, 'success');
+            addCommandToHistory('Request Status (SDK)', 'success', statusMsg);
+        } else {
+            appUtils.showToast('Failed to request robot status', 'danger');
+            addCommandToHistory('Request Status (SDK)', 'failed', 'No responses');
+        }
+    }).catch(error => {
+        console.error('[Commands] Status error:', error);
+        appUtils.showToast('Error requesting status: ' + error.message, 'danger');
+        addCommandToHistory('Request Status (SDK)', 'failed', error.message);
     });
 }
 
@@ -626,16 +667,29 @@ function sendBatteryCommand() {
         return;
     }
 
-    appUtils.apiCall(`/api/robots/${selectedRobotId}`).then(response => {
-        if (response.success) {
-            const battery = response.robot.battery_level;
-            const charging = response.robot.is_charging ? ' (Charging)' : '';
-            appUtils.showToast(`Battery: ${battery}%${charging}`, 'info');
-            addCommandToHistory('Request Battery', 'success', `${battery}%${charging}`);
+    if (!temiCommands) {
+        appUtils.showToast('Initializing SDK commands...', 'warning');
+        return;
+    }
+
+    appUtils.showToast('Requesting battery info from robot...', 'info');
+
+    temiCommands.getBattery().then(response => {
+        console.log('[Commands] Battery response:', response);
+        if (response && response.success) {
+            const batteryInfo = response.topic
+                ? `Battery level requested - check MQTT monitor for response`
+                : `Battery info received`;
+            appUtils.showToast(batteryInfo, 'success');
+            addCommandToHistory('Request Battery (SDK)', 'success', batteryInfo);
         } else {
-            appUtils.showToast('Failed to get battery status', 'danger');
-            addCommandToHistory('Request Battery', 'failed');
+            appUtils.showToast('Failed to request battery info', 'danger');
+            addCommandToHistory('Request Battery (SDK)', 'failed', response?.error || 'Unknown error');
         }
+    }).catch(error => {
+        console.error('[Commands] Battery error:', error);
+        appUtils.showToast('Error requesting battery: ' + error.message, 'danger');
+        addCommandToHistory('Request Battery (SDK)', 'failed', error.message);
     });
 }
 

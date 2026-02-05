@@ -563,6 +563,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/temi-sdk-commands.js') }}"></script>
 <script src="{{ url_for('static', filename='js/system_controls.js') }}"></script>
 <script src="{{ url_for('static', filename='js/commands.js') }}"></script>
 {% endblock %}
