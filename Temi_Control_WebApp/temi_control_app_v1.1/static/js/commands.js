@@ -548,17 +548,17 @@ function setupWasdControls() {
             return;
         }
 
-        // Movement: x controls forward/backward
+        // Forward/Backward: x controls movement
         if (pressedKeys.has('w')) x += moveSpeed;      // Forward
         if (pressedKeys.has('s')) x -= moveSpeed;      // Backward
 
-        // Strafing/Turning: y controls left/right (turning)
-        if (pressedKeys.has('a')) y -= turnSpeed;      // Turn left
-        if (pressedKeys.has('d')) y += turnSpeed;      // Turn right
+        // Turning: y controls left/right turning (A and D - switched)
+        if (pressedKeys.has('d')) y -= turnSpeed;      // Turn left
+        if (pressedKeys.has('a')) y += turnSpeed;      // Turn right
 
-        // Alternate strafe keys (Q and E for strafing if needed)
-        if (pressedKeys.has('q')) x -= moveSpeed;      // Backward alternative
-        if (pressedKeys.has('e')) x += moveSpeed;      // Forward alternative
+        // Rotation: theta controls rotation (Q and E)
+        if (pressedKeys.has('q')) theta -= turnSpeed;  // Rotate left
+        if (pressedKeys.has('e')) theta += turnSpeed;  // Rotate right
 
         const isZero = x === 0 && y === 0 && theta === 0;
         if (isZero && lastSentZero) return;
