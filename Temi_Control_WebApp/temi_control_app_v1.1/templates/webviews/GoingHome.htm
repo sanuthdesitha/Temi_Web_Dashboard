@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returning Home - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #6f42c1;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .home-icon {
+            font-size: 80px;
+            margin: 30px 0;
+            animation: float-home 3s ease-in-out infinite;
+        }
+        @keyframes float-home {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        .path-indicator {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            gap: 10px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: #6f42c1;
+            border-radius: 50%;
+            animation: path-flow 2s infinite;
+        }
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.4s; }
+        .dot:nth-child(3) { animation-delay: 0.8s; }
+        .dot:nth-child(4) { animation-delay: 1.2s; }
+        .dot:nth-child(5) { animation-delay: 1.6s; }
+        @keyframes path-flow {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .info-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #6f42c1;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>Returning Home</h1>
+        <p class="status-text">Patrol complete, heading back to home base</p>
+
+        <div class="home-icon">🏠</div>
+
+        <div class="path-indicator">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Status:</strong> In Transit</p>
+            <p><strong>Destination:</strong> Home Base</p>
+            <p><strong>Mode:</strong> Autonomous Navigation</p>
+        </div>
+    </div>
+</body>
+</html>

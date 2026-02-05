@@ -24,12 +24,79 @@ from mqtt_manager import mqtt_manager
 from patrol_manager import MultiRobotPatrolManager
 from position_tracker import PositionTracker
 from api_extensions import register_violation_routes, register_schedule_routes, register_detection_routes
+from webview_api import register_webview_routes
 from cloud_mqtt_monitor import initialize_cloud_monitor
 from alert_manager import AlertManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Settings keys that should store fully qualified file:// webview URLs
+WEBVIEW_URL_KEYS = {
+    'low_battery_webview_url',
+    'low_battery_return_webview_url',
+    'patrolling_webview_url',
+    'going_to_waypoint_webview_url',
+    'arrived_waypoint_webview_url',
+    'inspection_start_webview_url',
+    'no_violation_webview_url',
+    'violation_webview_url',
+    'violation_timeout_webview_url',
+    'going_home_webview_url',
+    'arrived_home_webview_url',
+}
+
+
+def normalize_webview_url(value: str) -> str:
+    """Normalize webview paths to file:///storage/emulated/0/..."""
+    if not value:
+        return value
+    trimmed = value.strip()
+    if trimmed.startswith(('http://', 'https://', 'file://')):
+        return trimmed
+    if trimmed.startswith('/'):
+        return f"file://{trimmed}"
+    return f"file:///storage/emulated/0/{trimmed}"
+
+
+stop_home_timers = {}
+
+
+def _send_robot_home(robot_id: int, reason: str = "manual") -> bool:
+    """Send robot to home base and log."""
+    home_location = db.get_setting('home_base_location', 'home base')
+    if mqtt_manager.goto_waypoint(robot_id, home_location):
+        db.add_activity_log(robot_id, 'info', f'Sent goto home base ({reason}): {home_location}')
+        return True
+    db.add_activity_log(robot_id, 'warning', f'Failed to send goto home base ({reason})')
+    return False
+
+
+def _cancel_stop_home_timer(robot_id: int):
+    timer = stop_home_timers.pop(robot_id, None)
+    if timer:
+        timer.cancel()
+
+
+def _schedule_stop_home(robot_id: int):
+    """Schedule auto-send home after stop patrol, unless always-send is enabled."""
+    _cancel_stop_home_timer(robot_id)
+    try:
+        timeout_raw = db.get_setting('patrol_stop_home_timeout_seconds', '15')
+        timeout_seconds = int(timeout_raw)
+    except Exception:
+        timeout_seconds = 15
+    always_send = str(db.get_setting('patrol_stop_always_send_home', 'false')).lower() == 'true'
+    if always_send:
+        _send_robot_home(robot_id, reason="always_send_home")
+        return
+    if timeout_seconds <= 0:
+        return
+    timer = threading.Timer(timeout_seconds, _send_robot_home, args=(robot_id, "stop_timeout"))
+    timer.daemon = True
+    stop_home_timers[robot_id] = timer
+    timer.start()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -717,16 +784,31 @@ def on_cloud_mqtt_message(topic, payload):
                                 continue
                     return 0, False
 
+                def extract_charging(data: dict):
+                    raw = data.get('is_charging', data.get('isCharging', data.get('charging')))
+                    if raw is None:
+                        return False
+                    if isinstance(raw, bool):
+                        return raw
+                    return str(raw).strip().lower() in ('1', 'true', 'yes', 'on')
+
                 if '/status/info' in topic:
                     waypoint_list = payload.get('waypoint_list') or payload.get('locations') or []
+                    waypoint_positions = payload.get('locations_with_pose') or payload.get('waypoint_positions') or []
                     battery, has_battery = extract_battery(payload)
                     if waypoint_list:
                         db.update_robot_waypoints(robot_id, waypoint_list)
+                    if waypoint_positions:
+                        try:
+                            db.update_robot(robot_id, waypoints_positions_json=json.dumps(waypoint_positions))
+                        except Exception as exc:
+                            logger.error(f"Failed to store waypoint positions: {exc}")
                     if has_battery:
                         db.update_robot_status(robot_id, 'connected', battery_level=battery)
                     emit_socketio('robot_status', {
                         'robot_id': robot_id,
                         'waypoints': waypoint_list,
+                        'waypoint_positions': waypoint_positions,
                         'battery': battery if has_battery else None,
                         'timestamp': datetime.now().isoformat()
                     })
@@ -734,12 +816,24 @@ def on_cloud_mqtt_message(topic, payload):
                         emit_socketio('battery_update', {
                             'robot_id': robot_id,
                             'battery': battery,
-                            'is_charging': payload.get('is_charging', False),
+                            'is_charging': extract_charging(payload),
                             'timestamp': datetime.now().isoformat()
                         })
                 elif '/status/utils/battery' in topic:
                     battery, has_battery = extract_battery(payload)
-                    is_charging = payload.get('is_charging', False)
+                    is_charging = extract_charging(payload)
+                    if has_battery:
+                        db.update_robot_status(robot_id, 'connected', battery_level=battery, is_charging=is_charging)
+                        patrol_manager.update_battery_level(robot_id, battery, is_charging)
+                        emit_socketio('battery_update', {
+                            'robot_id': robot_id,
+                            'battery': battery,
+                            'is_charging': is_charging,
+                            'timestamp': datetime.now().isoformat()
+                        })
+                elif '/status/battery' in topic:
+                    battery, has_battery = extract_battery(payload)
+                    is_charging = extract_charging(payload)
                     if has_battery:
                         db.update_robot_status(robot_id, 'connected', battery_level=battery, is_charging=is_charging)
                         patrol_manager.update_battery_level(robot_id, battery, is_charging)
@@ -1106,28 +1200,62 @@ def on_mqtt_message(robot_id, serial_number, topic, payload):
                 if subcategory == 'info':
                     # Robot status info (waypoint list, battery)
                     waypoint_list = payload.get('waypoint_list', [])
+                    waypoint_positions = payload.get('locations_with_pose') or payload.get('waypoint_positions') or []
                     battery = None
                     for key in ['battery_percentage', 'percentage', 'battery', 'level', 'percent']:
                         if key in payload and payload.get(key) is not None:
                             battery = payload.get(key)
                             break
                     has_battery = battery is not None
+                    is_charging = payload.get('is_charging', payload.get('isCharging', payload.get('charging', False)))
                     
                     # Update robot waypoints
                     db.update_robot_waypoints(robot_id, waypoint_list)
+                    if waypoint_positions:
+                        try:
+                            db.update_robot(robot_id, waypoints_positions_json=json.dumps(waypoint_positions))
+                        except Exception as exc:
+                            logger.error(f"Failed to store waypoint positions: {exc}")
                     
                     # Update battery
                     if has_battery:
-                        db.update_robot_status(robot_id, 'connected', battery_level=battery)
+                        db.update_robot_status(robot_id, 'connected', battery_level=battery, is_charging=is_charging)
                     
                     # Emit to frontend
                     emit_socketio('robot_status', {
                         'robot_id': robot_id,
                         'waypoints': waypoint_list,
+                        'waypoint_positions': waypoint_positions,
                         'battery': battery if has_battery else None,
                         'timestamp': datetime.now().isoformat()
                     })
+                    if has_battery:
+                        emit_socketio('battery_update', {
+                            'robot_id': robot_id,
+                            'battery': battery,
+                            'is_charging': bool(is_charging),
+                            'timestamp': datetime.now().isoformat()
+                        })
                     
+                elif subcategory == 'battery':
+                    battery = None
+                    for key in ['percentage', 'battery_percentage', 'battery', 'level', 'percent']:
+                        if key in payload and payload.get(key) is not None:
+                            battery = payload.get(key)
+                            break
+                    has_battery = battery is not None
+                    is_charging = payload.get('is_charging', payload.get('isCharging', payload.get('charging', False)))
+
+                    if has_battery:
+                        db.update_robot_status(robot_id, 'connected', battery_level=battery, is_charging=is_charging)
+                        patrol_manager.update_battery_level(robot_id, battery, is_charging)
+                        emit_socketio('battery_update', {
+                            'robot_id': robot_id,
+                            'battery': battery,
+                            'is_charging': bool(is_charging),
+                            'timestamp': datetime.now().isoformat()
+                        })
+
                 elif subcategory == 'utils' and len(topic_parts) >= 5 and topic_parts[4] == 'battery':
                     # Battery status update
                     battery = None
@@ -1136,7 +1264,7 @@ def on_mqtt_message(robot_id, serial_number, topic, payload):
                             battery = payload.get(key)
                             break
                     has_battery = battery is not None
-                    is_charging = payload.get('is_charging', False)
+                    is_charging = payload.get('is_charging', payload.get('isCharging', payload.get('charging', False)))
                     
                     # Update database
                     if has_battery:
@@ -1145,6 +1273,12 @@ def on_mqtt_message(robot_id, serial_number, topic, payload):
                     # Update patrol manager
                     if has_battery:
                         patrol_manager.update_battery_level(robot_id, battery, is_charging)
+                        emit_socketio('battery_update', {
+                            'robot_id': robot_id,
+                            'battery': battery,
+                            'is_charging': bool(is_charging),
+                            'timestamp': datetime.now().isoformat()
+                        })
                     
                     # Emit to frontend
                     if has_battery:
@@ -1609,6 +1743,7 @@ def api_get_robots():
     for robot in robots:
         robot['mqtt_connected'] = mqtt_manager.is_robot_connected(robot['id'])
         robot['waypoints'] = json.loads(robot.get('waypoints_json', '[]'))
+        robot['waypoint_positions'] = json.loads(robot.get('waypoints_positions_json', '[]'))
     
     return jsonify({'success': True, 'robots': robots})
 
@@ -1622,6 +1757,7 @@ def api_get_robot(robot_id):
     if robot:
         robot['mqtt_connected'] = mqtt_manager.is_robot_connected(robot_id)
         robot['waypoints'] = json.loads(robot.get('waypoints_json', '[]'))
+        robot['waypoint_positions'] = json.loads(robot.get('waypoints_positions_json', '[]'))
         return jsonify({'success': True, 'robot': robot})
     
     return jsonify({'success': False, 'error': 'Robot not found'}), 404
@@ -1869,6 +2005,7 @@ def api_start_patrol():
     success = patrol_manager.start_patrol(robot_id, route)
     
     if success:
+        _cancel_stop_home_timer(robot_id)
         _start_patrol_tracking(robot_id, route)
         try:
             start_yolo_pipeline()
@@ -1910,6 +2047,7 @@ def api_stop_patrol():
         except Exception as exc:
             logger.error(f"Failed to finalize patrol tracking: {exc}")
         db.add_activity_log(robot_id, 'info', 'Stopped patrol')
+        _schedule_stop_home(robot_id)
         emit_active_patrol_count()
         emit_socketio('patrol_status_update', {
             'robot_id': robot_id,
@@ -1929,6 +2067,30 @@ def api_stop_patrol():
         return jsonify({'success': True})
     
     return jsonify({'success': False, 'error': 'Failed to stop patrol'}), 500
+
+
+@app.route('/api/patrol/stop_home_decision', methods=['POST'])
+@login_required
+def api_stop_home_decision():
+    """Handle stop patrol home decision from UI"""
+    data = request.json
+    robot_id = data.get('robot_id')
+    action = (data.get('action') or '').lower()
+
+    if not robot_id:
+        return jsonify({'success': False, 'error': 'robot_id required'}), 400
+
+    if action == 'cancel':
+        _cancel_stop_home_timer(robot_id)
+        db.add_activity_log(robot_id, 'info', 'Stop patrol: auto-home cancelled')
+        return jsonify({'success': True})
+
+    if action == 'send':
+        _cancel_stop_home_timer(robot_id)
+        ok = _send_robot_home(robot_id, reason="stop_prompt")
+        return jsonify({'success': ok})
+
+    return jsonify({'success': False, 'error': 'action must be send or cancel'}), 400
 
 
 @app.route('/api/patrol/pause', methods=['POST'])
@@ -2266,9 +2428,18 @@ def api_request_waypoints():
     if not ensure_robot_connected(robot_id):
         return jsonify({'success': False, 'error': 'Robot is not connected to MQTT. Please connect robot first.'}), 400
 
-    if mqtt_manager.request_waypoints(robot_id):
-        db.add_activity_log(robot_id, 'info', 'Requested waypoint list')
-        return jsonify({'success': True})
+    waypoint_ok = mqtt_manager.request_waypoints(robot_id)
+    locations_ok = mqtt_manager.request_locations(robot_id)
+
+    if waypoint_ok or locations_ok:
+        db.add_activity_log(
+            robot_id,
+            'info',
+            'Requested waypoint list',
+            details=f"waypoint_fetch={waypoint_ok}, info_getLocations={locations_ok}"
+        )
+        return jsonify({'success': True, 'waypoint_fetch': waypoint_ok, 'info_getLocations': locations_ok})
+
     return jsonify({'success': False, 'error': 'Failed to request waypoints'}), 500
 
 
@@ -2927,6 +3098,8 @@ def api_update_settings():
     data = request.json
     
     for key, value in data.items():
+        if key in WEBVIEW_URL_KEYS and isinstance(value, str):
+            value = normalize_webview_url(value)
         db.update_setting(key, value)
     
     # Refresh global settings
@@ -3002,9 +3175,10 @@ def api_clear_logs():
 
 
 # Register additional API routes
-register_violation_routes(app, socketio, login_required)
+register_violation_routes(app, socketio, login_required, get_yolo_state=lambda: yolo_state)
 register_schedule_routes(app, login_required, patrol_manager, mqtt_manager)
 register_detection_routes(app, mqtt_manager, login_required)
+register_webview_routes(app, login_required)
 
 
 # WebSocket Events

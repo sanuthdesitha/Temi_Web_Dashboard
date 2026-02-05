@@ -77,7 +77,7 @@
                     <div class="mb-3">
                         <label for="webviewUrl" class="form-label">File Path or URL</label>
                         <input type="text" class="form-control" id="webviewUrl"
-                               placeholder="e.g., temiscreens/Violation.htm">
+                               placeholder="e.g., file:///storage/emulated/0/temiscreens/Violation.htm">
                         <div class="form-text">
                             Local paths will be converted to: file:///storage/emulated/0/path
                         </div>
@@ -86,15 +86,15 @@
                         <label class="form-label">Quick Paths</label>
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-sm btn-outline-info quick-webview"
-                                    data-path="temiscreens/Violation.htm">
+                                    data-path="file:///storage/emulated/0/temiscreens/Violation.htm">
                                 <i class="bi bi-file-earmark"></i> Violation Screen
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-info quick-webview"
-                                    data-path="temiscreens/Safety.htm">
+                                    data-path="file:///storage/emulated/0/temiscreens/Safety.htm">
                                 <i class="bi bi-file-earmark"></i> Safety Screen
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-info quick-webview"
-                                    data-path="temiscreens/Alert.htm">
+                                    data-path="file:///storage/emulated/0/temiscreens/Alert.htm">
                                 <i class="bi bi-file-earmark"></i> Alert Screen
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-info quick-webview"
@@ -338,88 +338,7 @@
             </div>
         </div>
 
-        <!-- Volume Control -->
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bi bi-volume-up"></i> Volume Control</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Adjust robot speaker volume</p>
-                    <div class="mb-3">
-                        <label for="volumeSlider" class="form-label">Volume Level</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <input
-                                type="range"
-                                class="form-range"
-                                id="volumeSlider"
-                                min="0"
-                                max="100"
-                                value="50"
-                                style="flex: 1;"
-                            >
-                            <span id="volumeValue" class="badge bg-secondary" style="min-width: 50px;">50%</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Quick Set</label>
-                        <div class="d-grid gap-2">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-sm btn-outline-warning w-100 quick-volume" data-volume="0">
-                                        <i class="bi bi-volume-mute"></i> Mute
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-sm btn-outline-warning w-100 quick-volume" data-volume="50">
-                                        <i class="bi bi-volume-down"></i> Medium
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-sm btn-outline-warning w-100 quick-volume" data-volume="75">
-                                        <i class="bi bi-volume-up"></i> High
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-sm btn-outline-warning w-100 quick-volume" data-volume="100">
-                                        <i class="bi bi-volume-up-fill"></i> Max
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn btn-warning w-100" id="setVolumeBtn">
-                        <i class="bi bi-check-circle"></i> Set Volume
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- System Controls -->
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-gear"></i> System Controls</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Robot system operations</p>
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-warning" id="restartRobotBtn" data-bs-toggle="tooltip" title="Gracefully restart the robot (~30s)">
-                            <i class="bi bi-arrow-clockwise"></i> Restart Robot
-                        </button>
-                        <button class="btn btn-outline-danger" id="shutdownRobotBtn" data-bs-toggle="tooltip" title="Safely shutdown robot (requires manual restart)">
-                            <i class="bi bi-power"></i> Shutdown Robot
-                        </button>
-                    </div>
-                    <div class="alert alert-info mt-3 mb-0">
-                        <small>
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Note:</strong> These are critical operations. Confirmation required.
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Volume Control and System Controls moved to SDK Commands page for centralized management -->
     </div>
 
     <!-- WASD Keyboard Control -->

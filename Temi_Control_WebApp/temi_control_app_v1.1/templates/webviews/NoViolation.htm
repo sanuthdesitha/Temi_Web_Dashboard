@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Violation Detected - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #28a745;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .success-checkmark {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            border: 4px solid #28a745;
+            border-radius: 50%;
+            position: relative;
+            margin: 30px 0;
+            animation: checkmark-rotate 0.6s ease-out;
+        }
+        .success-checkmark::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            border: 4px solid #28a745;
+            border-top: none;
+            border-left: none;
+            transform: rotate(45deg) translate(12px, -18px);
+            animation: checkmark-draw 0.6s ease-out;
+        }
+        @keyframes checkmark-rotate {
+            0% { transform: rotate(-45deg) scale(0); }
+            100% { transform: rotate(0) scale(1); }
+        }
+        @keyframes checkmark-draw {
+            0% { width: 0; height: 0; }
+            100% { width: 30px; height: 60px; }
+        }
+        .info-box {
+            background: #f0f9f4;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #28a745;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        .success-badge {
+            display: inline-block;
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>Compliant</h1>
+        <p class="status-text">No safety violations detected</p>
+
+        <div class="success-checkmark"></div>
+
+        <div class="info-box">
+            <p><strong>Status:</strong> All Clear</p>
+            <p><strong>PPE Compliance:</strong> Full Adherence Detected</p>
+            <p><strong>Result:</strong> Excellent Safety Standards</p>
+        </div>
+
+        <div class="success-badge">
+            Keep up the excellent safety practices!
+        </div>
+    </div>
+</body>
+</html>
