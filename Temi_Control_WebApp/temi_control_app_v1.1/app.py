@@ -1634,7 +1634,7 @@ def api_upload_robot_map(robot_id):
     if 'map_image' not in request.files:
         return jsonify({'success': False, 'error': 'No map_image file provided'}), 400
 
-    robot = db.get_robot(robot_id)
+    robot = db.get_robot_by_id(robot_id)
     if not robot:
         return jsonify({'success': False, 'error': 'Robot not found'}), 404
 
@@ -2325,7 +2325,7 @@ def api_set_volume():
         except (ValueError, TypeError):
             return jsonify({'success': False, 'error': 'Volume must be a number'}), 400
 
-        robot = db.get_robot(robot_id)
+        robot = db.get_robot_by_id(robot_id)
         if not robot:
             return jsonify({'success': False, 'error': 'Robot not found'}), 404
 
@@ -2362,7 +2362,7 @@ def api_set_volume():
 def api_get_volume(robot_id):
     """Get robot's volume setting"""
     try:
-        robot = db.get_robot(robot_id)
+        robot = db.get_robot_by_id(robot_id)
         if not robot:
             return jsonify({'success': False, 'error': 'Robot not found'}), 404
 
@@ -2387,7 +2387,7 @@ def api_restart_robot():
         if not robot_id:
             return jsonify({'success': False, 'error': 'robot_id required'}), 400
 
-        robot = db.get_robot(robot_id)
+        robot = db.get_robot_by_id(robot_id)
         if not robot:
             return jsonify({'success': False, 'error': 'Robot not found'}), 404
 
@@ -2414,7 +2414,7 @@ def api_restart_robot():
                 timeout = 60  # 60 second timeout
                 while time.time() - start_time < timeout:
                     time.sleep(5)
-                    current_robot = db.get_robot(robot_id)
+                    current_robot = db.get_robot_by_id(robot_id)
                     if current_robot and current_robot.get('is_connected'):
                         # Robot reconnected
                         db.set_robot_setting(robot_id, 'state', 'ready')
@@ -2459,7 +2459,7 @@ def api_shutdown_robot():
         if not robot_id:
             return jsonify({'success': False, 'error': 'robot_id required'}), 400
 
-        robot = db.get_robot(robot_id)
+        robot = db.get_robot_by_id(robot_id)
         if not robot:
             return jsonify({'success': False, 'error': 'Robot not found'}), 404
 
