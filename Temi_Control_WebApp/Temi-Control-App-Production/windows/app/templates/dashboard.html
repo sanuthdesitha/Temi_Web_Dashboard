@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-robot"></i> Total Robots</h5>
+                    <h2 id="total-robots">{{ robots|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-wifi"></i> Connected</h5>
+                    <h2 id="connected-robots">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-shield-exclamation"></i> Active Violations</h5>
+                    <h2 id="active-violations">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-play-circle"></i> Active Patrols</h5>
+                    <h2 id="active-patrols">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-battery-half"></i> Low Battery</h5>
+                    <h2 id="low-battery-robots">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MQTT Connection Status -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cloud-check"></i> MQTT Connection Status</h5>
+                    <button class="btn btn-sm btn-primary" id="testMqttBtn">
+                        <i class="bi bi-arrow-repeat"></i> Test Connection
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Cloud Broker Status -->
+                        <div class="col-lg-6">
+                            <h6 class="mb-3">HiveMQ Cloud Broker</h6>
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span id="cloudBrokerIcon" class="badge bg-secondary">
+                                        <i class="bi bi-circle-fill"></i>
+                                    </span>
+                                    <span id="cloudBrokerStatus" class="text-muted">Checking...</span>
+                                </div>
+                                <small class="text-muted">
+                                    <div id="cloudBrokerInfo">Loading broker info...</div>
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Robot MQTT Status -->
+                        <div class="col-lg-6">
+                            <h6 class="mb-3">Robot MQTT Connections</h6>
+                            <div id="robotMqttList" class="list-group list-group-sm">
+                                <div class="text-muted">Loading robot status...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Preview -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Position Preview</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="dashboardPositionToggle" checked>
+                        </div>
+                        <a href="{{ url_for('position_tracking_page') }}" class="btn btn-sm btn-outline-primary">
+                            Open Tracking
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <select class="form-select form-select-sm" id="dashboardPositionRobot">
+                            <option value="">All robots</option>
+                            {% for robot in robots %}
+                            <option value="{{ robot.id }}">{{ robot.name }} ({{ robot.serial_number }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <canvas id="dashboardPositionCanvas" width="500" height="300" class="border rounded w-100">
+                        Your browser does not support canvas.
+                    </canvas>
+                    <small class="text-muted d-block mt-2">Live positions (latest updates)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Latest Positions</h5>
+                </div>
+                <div class="card-body">
+                    <div id="dashboardPositionList" class="list-group small">
+                        <div class="text-muted">Loading positions...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Robots Status -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Robots Status</h5>
+                </div>
+                <div class="card-body">
+                    <div id="robots-container" class="row">
+                        {% if robots %}
+                            {% for robot in robots %}
+                            <div class="col-md-6 col-lg-4 mb-3" data-robot-id="{{ robot.id }}">
+                                <div class="card robot-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="bi bi-robot"></i> {{ robot.name }}
+                                            <span class="badge bg-secondary float-end connection-status">Disconnected</span>
+                                        </h5>
+                                        <p class="card-text">
+                                            <small class="text-muted">Serial: {{ robot.serial_number }}</small>
+                                        </p>
+                                        <div class="robot-info">
+                                            <div class="mb-2">
+                                                <i class="bi bi-battery-full"></i> Battery: 
+                                                <span class="battery-level">{{ robot.battery_level }}%</span>
+                                                <span class="charging-status badge bg-secondary ms-2">
+                                                    {{ 'Charging' if robot.is_charging else 'Idle' }}
+                                                </span>
+                                                <div class="progress" style="height: 5px;">
+                                                    <div class="progress-bar battery-bar" role="progressbar" 
+                                                         style="width: {{ robot.battery_level }}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <i class="bi bi-geo-alt"></i> Location: 
+                                                <span class="current-location">{{ robot.current_location or 'Unknown' }}</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <i class="bi bi-activity"></i> Status: 
+                                                <span class="patrol-status badge bg-secondary">Idle</span>
+                                            </div>
+                                        </div>
+                                        <div class="btn-group w-100 mt-2" role="group">
+                                            <button class="btn btn-sm btn-primary btn-goto-home" data-robot-id="{{ robot.id }}">
+                                                <i class="bi bi-house"></i> Home
+                                            </button>
+                                            <button class="btn btn-sm btn-info btn-webview" data-robot-id="{{ robot.id }}">
+                                                <i class="bi bi-window"></i> WebView
+                                            </button>
+                                            <button class="btn btn-sm btn-danger btn-stop" data-robot-id="{{ robot.id }}">
+                                                <i class="bi bi-stop-circle"></i> Stop
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> No robots configured. 
+                                    <a href="{{ url_for('robots') }}" class="alert-link">Add a robot</a> to get started.
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recent-activity" class="activity-log" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Activity logs will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WebView Modal -->
+<div class="modal fade" id="webviewModal" tabindex="-1" aria-labelledby="webviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="webviewModalLabel"><i class="bi bi-window"></i> Send WebView Command</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="webviewForm">
+                    <div class="mb-3">
+                        <label for="webviewUrl" class="form-label">File Path or URL</label>
+                        <input type="text" class="form-control" id="webviewUrl" placeholder="e.g., file:///storage/emulated/0/temiscreens/Violation.htm" required>
+                        <div class="form-text">
+                            Enter a local file path (e.g., file:///storage/emulated/0/temiscreens/Violation.htm) or full URL.<br>
+                            Local paths will be converted to: file:///storage/emulated/0/yourpath
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quick Paths</label>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-path" data-path="file:///storage/emulated/0/temiscreens/Violation.htm">
+                                <i class="bi bi-file-earmark"></i> Violation Screen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-path" data-path="file:///storage/emulated/0/temiscreens/Safety.htm">
+                                <i class="bi bi-file-earmark"></i> Safety Screen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-path" data-path="file:///storage/emulated/0/temiscreens/Alert.htm">
+                                <i class="bi bi-file-earmark"></i> Alert Screen
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="webviewRobotId">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendWebviewBtn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/position_tracker.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

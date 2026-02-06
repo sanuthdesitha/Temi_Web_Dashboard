@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="bi bi-gear"></i> Settings</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Default MQTT Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="mqtt-settings-form">
+                        <div class="mb-3">
+                            <label for="default_mqtt_broker" class="form-label">Default Broker URL</label>
+                            <input type="text" class="form-control" id="default_mqtt_broker" 
+                                   value="{{ settings.default_mqtt_broker }}">
+                            <small class="text-muted">Default MQTT broker for new robots</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="default_mqtt_port" class="form-label">Default Port</label>
+                            <input type="number" class="form-control" id="default_mqtt_port" 
+                                   value="{{ settings.default_mqtt_port }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="default_mqtt_username" class="form-label">Default Username</label>
+                            <input type="text" class="form-control" id="default_mqtt_username" 
+                                   value="{{ settings.default_mqtt_username }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="default_mqtt_password" class="form-label">Default Password</label>
+                            <input type="password" class="form-control" id="default_mqtt_password" 
+                                   value="{{ settings.default_mqtt_password }}">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="default_mqtt_use_tls"
+                                   {% if settings.default_mqtt_use_tls == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="default_mqtt_use_tls">Use TLS/SSL by default</label>
+                        </div>
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-info" id="testMqttSettingsBtn">
+                                <i class="bi bi-cloud-check"></i> Test Cloud MQTT Connection
+                            </button>
+                            <small class="text-muted d-block mt-2">Click to verify your HiveMQ Cloud broker connection</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Battery Management</h5>
+                </div>
+                <div class="card-body">
+                    <form id="battery-settings-form">
+                        <div class="mb-3">
+                            <label for="low_battery_threshold" class="form-label">Low Battery Threshold (%)</label>
+                            <input type="number" class="form-control" id="low_battery_threshold" 
+                                   value="{{ settings.low_battery_threshold }}" min="5" max="50">
+                            <small class="text-muted">Alert when battery drops below this level</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="low_battery_action" class="form-label">Low Battery Action</label>
+                            <select class="form-select" id="low_battery_action">
+                                <option value="stop_immediately" 
+                                        {% if settings.low_battery_action == 'stop_immediately' %}selected{% endif %}>
+                                    Stop immediately and go to home base
+                                </option>
+                                <option value="complete_current" 
+                                        {% if settings.low_battery_action == 'complete_current' %}selected{% endif %}>
+                                    Complete current waypoint then go to home base
+                                </option>
+                            </select>
+                            <small class="text-muted">What to do when battery is low during patrol</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="low_battery_webview_url" class="form-label">Low Battery WebView URL</label>
+                            <input type="text" class="form-control" id="low_battery_webview_url"
+                                   value="{{ settings.low_battery_webview_url or 'file:///storage/emulated/0/temiscreens/LowBattery.htm' }}">
+                            <small class="text-muted">Shown when battery is below threshold</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="low_battery_return_webview_url" class="form-label">Low Battery Return WebView URL</label>
+                            <input type="text" class="form-control" id="low_battery_return_webview_url"
+                                   value="{{ settings.low_battery_return_webview_url or 'file:///storage/emulated/0/temiscreens/LowBatteryReturn.htm' }}">
+                            <small class="text-muted">Shown when returning home due to low battery</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Patrol Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="patrol-settings-form">
+                        <div class="mb-3">
+                            <label for="default_movement_speed" class="form-label">Default Movement Speed</label>
+                            <input type="range" class="form-range" id="default_movement_speed" 
+                                   min="0.1" max="1.0" step="0.1" value="{{ settings.default_movement_speed }}">
+                            <small class="text-muted">Current: <span id="speed-value">{{ settings.default_movement_speed }}</span></small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="home_base_location" class="form-label">Home Base Location Name</label>
+                            <input type="text" class="form-control" id="home_base_location" 
+                                   value="{{ settings.home_base_location }}">
+                            <small class="text-muted">The waypoint name for the home base</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="waypoint_timeout" class="form-label">Waypoint Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="waypoint_timeout"
+                                   value="{{ settings.waypoint_timeout or 60 }}" min="10" max="300">
+                            <small class="text-muted">How long to wait before retrying a waypoint</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="waypoint_max_retries" class="form-label">Waypoint Max Retries</label>
+                            <input type="number" class="form-control" id="waypoint_max_retries"
+                                   value="{{ settings.waypoint_max_retries or 2 }}" min="0" max="5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="patrol_stop_home_timeout_seconds" class="form-label">Stop Patrol Auto-Home Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="patrol_stop_home_timeout_seconds"
+                                   value="{{ settings.patrol_stop_home_timeout_seconds or 15 }}" min="5" max="120">
+                            <small class="text-muted">Time to wait before auto-sending robot home after stop patrol</small>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="patrol_stop_always_send_home"
+                                   {% if settings.patrol_stop_always_send_home == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="patrol_stop_always_send_home">Always send home on stop</label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Map Calibration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="map-settings-form">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="map_scale_pixels_per_meter" class="form-label">Scale (px per meter)</label>
+                                <input type="number" class="form-control" id="map_scale_pixels_per_meter"
+                                       value="{{ settings.map_scale_pixels_per_meter or 50 }}" min="5" max="500">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="map_origin_x" class="form-label">Map Origin X</label>
+                                <input type="number" class="form-control" id="map_origin_x"
+                                       value="{{ settings.map_origin_x or 0 }}" step="1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="map_origin_y" class="form-label">Map Origin Y</label>
+                                <input type="number" class="form-control" id="map_origin_y"
+                                       value="{{ settings.map_origin_y or 0 }}" step="1">
+                            </div>
+                        </div>
+                        <small class="text-muted">Used for fixed map overlays if auto-fit is disabled.</small>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Detection & Violation Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="detection-settings-form">
+                        <div class="mb-3">
+                            <label for="yolo_script_path" class="form-label">YOLO Script Path</label>
+                            <input type="text" class="form-control" id="yolo_script_path"
+                                   value="{{ settings.yolo_script_path or '' }}" placeholder="C:\\path\\to\\yolo.py">
+                            <small class="text-muted">Optional. Used to auto-start YOLO on patrol start.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="detection_timeout_seconds" class="form-label">Detection Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="detection_timeout_seconds"
+                                   value="{{ settings.detection_timeout_seconds or 30 }}" min="5" max="180">
+                            <small class="text-muted">Maximum time to wait for zero violations before moving on</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="no_violation_seconds" class="form-label">No-Violation Window (seconds)</label>
+                            <input type="number" class="form-control" id="no_violation_seconds"
+                                   value="{{ settings.no_violation_seconds or 5 }}" min="2" max="60">
+                            <small class="text-muted">How long violations must stay at 0 to proceed</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="no_violation_tts" class="form-label">No-Violation TTS</label>
+                            <input type="text" class="form-control" id="no_violation_tts"
+                                   value="{{ settings.no_violation_tts or 'No violation detected. Moving to next waypoint.' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="tts_wait_seconds" class="form-label">TTS Wait Time (seconds)</label>
+                            <input type="number" class="form-control" id="tts_wait_seconds"
+                                   value="{{ settings.tts_wait_seconds or 3 }}" min="0" max="30">
+                            <small class="text-muted">Delay after sending a TTS command</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="display_wait_seconds" class="form-label">Display Wait Time (seconds)</label>
+                            <input type="number" class="form-control" id="display_wait_seconds"
+                                   value="{{ settings.display_wait_seconds or 2 }}" min="0" max="30">
+                            <small class="text-muted">Delay after sending a display/webview/video command</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="patrolling_webview_url" class="form-label">Patrolling WebView URL</label>
+                            <input type="text" class="form-control" id="patrolling_webview_url"
+                                   value="{{ settings.patrolling_webview_url or 'file:///storage/emulated/0/temiscreens/Patrolling.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="going_to_waypoint_webview_url" class="form-label">Going To Waypoint WebView URL</label>
+                            <input type="text" class="form-control" id="going_to_waypoint_webview_url"
+                                   value="{{ settings.going_to_waypoint_webview_url or 'file:///storage/emulated/0/temiscreens/GoingToWaypoint.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="arrived_waypoint_webview_url" class="form-label">Arrived At Waypoint WebView URL</label>
+                            <input type="text" class="form-control" id="arrived_waypoint_webview_url"
+                                   value="{{ settings.arrived_waypoint_webview_url or 'file:///storage/emulated/0/temiscreens/ArrivedWaypoint.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inspection_start_webview_url" class="form-label">Starting Inspection WebView URL</label>
+                            <input type="text" class="form-control" id="inspection_start_webview_url"
+                                   value="{{ settings.inspection_start_webview_url or 'file:///storage/emulated/0/temiscreens/InspectionStart.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="no_violation_webview_url" class="form-label">No-Violation WebView URL</label>
+                            <input type="text" class="form-control" id="no_violation_webview_url"
+                                   value="{{ settings.no_violation_webview_url or 'file:///storage/emulated/0/temiscreens/NoViolation.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_webview_url" class="form-label">Violation WebView URL</label>
+                            <input type="text" class="form-control" id="violation_webview_url"
+                                   value="{{ settings.violation_webview_url or 'file:///storage/emulated/0/temiscreens/Violation.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_timeout_webview_url" class="form-label">Violation Timeout WebView URL</label>
+                            <input type="text" class="form-control" id="violation_timeout_webview_url"
+                                   value="{{ settings.violation_timeout_webview_url or 'file:///storage/emulated/0/temiscreens/ViolationTimeout.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="going_home_webview_url" class="form-label">Going To Home Base WebView URL</label>
+                            <input type="text" class="form-control" id="going_home_webview_url"
+                                   value="{{ settings.going_home_webview_url or 'file:///storage/emulated/0/temiscreens/GoingHome.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="arrived_home_webview_url" class="form-label">Arrived Home Base WebView URL</label>
+                            <input type="text" class="form-control" id="arrived_home_webview_url"
+                                   value="{{ settings.arrived_home_webview_url or 'file:///storage/emulated/0/temiscreens/ArrivedHome.htm' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="webview_close_delay_seconds" class="form-label">WebView Auto-Close Delay (seconds)</label>
+                            <input type="number" class="form-control" id="webview_close_delay_seconds"
+                                   value="{{ settings.webview_close_delay_seconds or 5 }}" min="0" max="300">
+                            <small class="text-muted">0 = do not auto-close unless set per waypoint</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="arrival_action_delay_seconds" class="form-label">Arrival Action Delay (seconds)</label>
+                            <input type="number" class="form-control" id="arrival_action_delay_seconds"
+                                   value="{{ settings.arrival_action_delay_seconds or 2 }}" min="0" max="30">
+                            <small class="text-muted">Pause after arriving before waypoint actions start</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_action_default" class="form-label">Violation Action (default)</label>
+                            <select class="form-select" id="violation_action_default">
+                                <option value="none" {% if settings.violation_action_default == 'none' %}selected{% endif %}>None</option>
+                                <option value="tts" {% if settings.violation_action_default == 'tts' %}selected{% endif %}>Speak TTS</option>
+                                <option value="webview" {% if settings.violation_action_default == 'webview' %}selected{% endif %}>Show WebView</option>
+                                <option value="video" {% if settings.violation_action_default == 'video' %}selected{% endif %}>Play Video</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="high_violation_threshold" class="form-label">High Violation Threshold</label>
+                            <input type="number" class="form-control" id="high_violation_threshold"
+                                   value="{{ settings.high_violation_threshold or 5 }}" min="1" max="50">
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_debounce_window" class="form-label">Violation Debounce Window</label>
+                            <input type="number" class="form-control" id="violation_debounce_window"
+                                   value="{{ settings.violation_debounce_window or 10 }}" min="3" max="60">
+                            <small class="text-muted">Number of samples used to smooth YOLO counts</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_smoothing_factor" class="form-label">Smoothing Factor (EMA)</label>
+                            <input type="number" class="form-control" id="violation_smoothing_factor"
+                                   value="{{ settings.violation_smoothing_factor or 0.3 }}" min="0.05" max="1.0" step="0.05">
+                        </div>
+                        <div class="mb-3">
+                            <label for="outlier_threshold" class="form-label">Outlier Threshold (Z-score)</label>
+                            <input type="number" class="form-control" id="outlier_threshold"
+                                   value="{{ settings.outlier_threshold or 3.0 }}" min="1.5" max="6.0" step="0.5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="yolo_shutdown_timeout" class="form-label">YOLO Shutdown Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="yolo_shutdown_timeout"
+                                   value="{{ settings.yolo_shutdown_timeout or 30 }}" min="5" max="120">
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_tts_default" class="form-label">Default TTS Message</label>
+                            <select class="form-select" id="violation_tts_default">
+                                <option value="Please follow safety protocols and wear proper PPE." {% if settings.violation_tts_default == 'Please follow safety protocols and wear proper PPE.' %}selected{% endif %}>Please follow safety protocols and wear proper PPE.</option>
+                                <option value="Safety violation detected. Please correct immediately." {% if settings.violation_tts_default == 'Safety violation detected. Please correct immediately.' %}selected{% endif %}>Safety violation detected. Please correct immediately.</option>
+                                <option value="Attention. PPE compliance required in this area." {% if settings.violation_tts_default == 'Attention. PPE compliance required in this area.' %}selected{% endif %}>Attention. PPE compliance required in this area.</option>
+                                <option value="Please wear your high-visibility vest and helmet." {% if settings.violation_tts_default == 'Please wear your high-visibility vest and helmet.' %}selected{% endif %}>Please wear your high-visibility vest and helmet.</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="violation_display_content_default" class="form-label">Default WebView/Video URL</label>
+                            <input type="text" class="form-control" id="violation_display_content_default"
+                                   value="{{ settings.violation_display_content_default }}">
+                            <small class="text-muted">Used when action is WebView or Video</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="yolo_stream_url" class="form-label">YOLO Stream URL</label>
+                            <input type="text" class="form-control" id="yolo_stream_url"
+                                   value="{{ settings.yolo_stream_url or 'http://192.168.18.135:8080' }}">
+                            <small class="text-muted">Local network stream URL for live monitoring</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Notification Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <form id="notification-settings-form">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="notifications_enabled"
+                                   {% if settings.notifications_enabled != 'false' %}checked{% endif %}>
+                            <label class="form-check-label" for="notifications_enabled">Enable Notifications</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="notify_in_app"
+                                   {% if settings.notify_in_app == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_in_app">In-App Notifications</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="notify_email"
+                                   {% if settings.notify_email == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_email">Email Alerts</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="notify_sms"
+                                   {% if settings.notify_sms == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_sms">SMS Alerts</label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="notify_webpush"
+                                   {% if settings.notify_webpush == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_webpush">Web Push Alerts</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="notify_telegram"
+                                   {% if settings.notify_telegram == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_telegram">Telegram Alerts</label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="notify_whatsapp"
+                                   {% if settings.notify_whatsapp == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_whatsapp">WhatsApp Alerts</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notify_only_high" class="form-label">Severity Filter</label>
+                            <select class="form-select" id="notify_only_high">
+                                <option value="true" {% if settings.notify_only_high == 'true' %}selected{% endif %}>High only</option>
+                                <option value="false" {% if settings.notify_only_high != 'true' %}selected{% endif %}>All severities</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notify_digest_frequency" class="form-label">Digest Frequency</label>
+                            <select class="form-select" id="notify_digest_frequency">
+                                <option value="realtime" {% if settings.notify_digest_frequency == 'realtime' %}selected{% endif %}>Real-time</option>
+                                <option value="daily" {% if settings.notify_digest_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if settings.notify_digest_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if settings.notify_digest_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                            </select>
+                        </div>
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-envelope"></i> SMTP Email Settings</h6>
+                        <div class="mb-3">
+                            <label for="smtp_host" class="form-label">SMTP Host</label>
+                            <input type="text" class="form-control" id="smtp_host" value="{{ settings.smtp_host or '' }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="smtp_port" class="form-label">SMTP Port</label>
+                                <input type="number" class="form-control" id="smtp_port" value="{{ settings.smtp_port or 587 }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="smtp_user" class="form-label">SMTP User</label>
+                                <input type="text" class="form-control" id="smtp_user" value="{{ settings.smtp_user or '' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="smtp_password" class="form-label">SMTP Password</label>
+                                <input type="password" class="form-control" id="smtp_password" value="{{ settings.smtp_password or '' }}">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="smtp_from" class="form-label">From Address</label>
+                                <input type="email" class="form-control" id="smtp_from" value="{{ settings.smtp_from or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="smtp_to" class="form-label">Recipient Address</label>
+                                <input type="email" class="form-control" id="smtp_to" value="{{ settings.smtp_to or '' }}">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="smtp_use_tls"
+                                   {% if settings.smtp_use_tls == 'true' %}checked{% endif %}>
+                            <label class="form-check-label" for="smtp_use_tls">Use TLS</label>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary mb-3" id="btn-test-smtp">
+                            <i class="bi bi-envelope-check"></i> Test SMTP
+                        </button>
+
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-chat-text"></i> Twilio SMS Settings</h6>
+                        <div class="mb-3">
+                            <label for="twilio_account_sid" class="form-label">Account SID</label>
+                            <input type="text" class="form-control" id="twilio_account_sid" value="{{ settings.twilio_account_sid or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="twilio_auth_token" class="form-label">Auth Token</label>
+                            <input type="password" class="form-control" id="twilio_auth_token" value="{{ settings.twilio_auth_token or '' }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="twilio_from" class="form-label">From Number</label>
+                                <input type="text" class="form-control" id="twilio_from" value="{{ settings.twilio_from or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="twilio_to" class="form-label">To Number</label>
+                                <input type="text" class="form-control" id="twilio_to" value="{{ settings.twilio_to or '' }}">
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-telegram"></i> Telegram Settings</h6>
+                        <div class="mb-3">
+                            <label for="telegram_bot_token" class="form-label">Bot Token</label>
+                            <input type="text" class="form-control" id="telegram_bot_token" value="{{ settings.telegram_bot_token or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="telegram_chat_id" class="form-label">Chat ID</label>
+                            <input type="text" class="form-control" id="telegram_chat_id" value="{{ settings.telegram_chat_id or '' }}">
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary mb-3" id="btn-test-telegram">
+                            <i class="bi bi-send-check"></i> Test Telegram
+                        </button>
+
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-whatsapp"></i> WhatsApp (Twilio) Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="twilio_whatsapp_from" class="form-label">From WhatsApp</label>
+                                <input type="text" class="form-control" id="twilio_whatsapp_from" value="{{ settings.twilio_whatsapp_from or '' }}" placeholder="whatsapp:+14155238886">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="twilio_whatsapp_to" class="form-label">To WhatsApp</label>
+                                <input type="text" class="form-control" id="twilio_whatsapp_to" value="{{ settings.twilio_whatsapp_to or '' }}" placeholder="whatsapp:+1234567890">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary mb-3" id="btn-test-whatsapp">
+                            <i class="bi bi-send-check"></i> Test WhatsApp
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" id="btn-save-settings">
+                    <i class="bi bi-save"></i> Save All Settings
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">System Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Application</dt>
+                        <dd class="col-sm-6">Temi Control</dd>
+                        
+                        <dt class="col-sm-6">Version</dt>
+                        <dd class="col-sm-6">1.0.0</dd>
+                        
+                        <dt class="col-sm-6">Database</dt>
+                        <dd class="col-sm-6">SQLite</dd>
+                        
+                        <dt class="col-sm-6">Protocol</dt>
+                        <dd class="col-sm-6">MQTT</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning" id="btn-clear-logs">
+                            <i class="bi bi-trash"></i> Clear All Logs
+                        </button>
+                        <button class="btn btn-outline-info" id="btn-test-mqtt">
+                            <i class="bi bi-wifi"></i> Test MQTT Connection
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Help & Documentation</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <small class="text-muted">
+                            For help and documentation, please refer to the README.md file 
+                            in the application directory.
+                        </small>
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Robot Management</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Route Planning</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Patrol Control</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Battery Monitoring</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Real-time Logs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

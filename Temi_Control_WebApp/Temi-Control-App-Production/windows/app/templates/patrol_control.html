@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Patrol Control - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-activity"></i> Patrol Control Center</h2>
+                <p class="text-muted mb-0">Live patrol status, stream, and controls</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-camera-video"></i> Live Stream</h5>
+                </div>
+                <div class="card-body">
+                    <img id="patrolFullStreamImg" class="img-fluid rounded border" alt="Live Stream">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Start Patrol</h5>
+                </div>
+                <div class="card-body">
+                    <label class="form-label">Route</label>
+                    <select class="form-select mb-2" id="patrolRouteSelect">
+                        <option value="">Select route...</option>
+                    </select>
+                    <button class="btn btn-primary w-100" id="patrolStartBtn">
+                        <i class="bi bi-play-circle"></i> Start Patrol
+                    </button>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Status</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Robot:</strong> <span id="patrol-full-robot">-</span></p>
+                    <p><strong>Route:</strong> <span id="patrol-full-route">-</span></p>
+                    <p><strong>State:</strong> <span id="patrol-full-state">-</span></p>
+                    <p><strong>Loop:</strong> <span id="patrol-full-loop">-</span></p>
+                    <p><strong>Progress:</strong> <span id="patrol-full-progress">-</span></p>
+                    <p><strong>Battery:</strong> <span id="patrol-full-battery">-</span></p>
+                    <p><strong>Location:</strong> <span id="patrol-full-location">-</span></p>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Controls</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <button class="btn btn-warning" id="patrol-full-pause"><i class="bi bi-pause"></i> Pause</button>
+                        <button class="btn btn-success" id="patrol-full-resume" style="display:none;"><i class="bi bi-play"></i> Resume</button>
+                        <button class="btn btn-danger" id="patrol-full-stop"><i class="bi bi-stop"></i> Stop</button>
+                    </div>
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="btn btn-outline-danger w-100" id="patrol-full-emergency">
+                            <i class="bi bi-exclamation-octagon"></i> Emergency Stop
+                        </button>
+                        <button class="btn btn-outline-primary w-100" id="patrol-full-home">
+                            <i class="bi bi-house"></i> Send Home
+                        </button>
+                    </div>
+                    <label for="patrol-full-speed" class="form-label">Speed</label>
+                    <input type="range" class="form-range" id="patrol-full-speed" min="0.1" max="1.0" step="0.1" value="0.5">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">YOLO Counts</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Violations:</strong> <span id="patrol-full-violations">0</span></p>
+                    <p><strong>People:</strong> <span id="patrol-full-people">0</span></p>
+                    <div class="row small">
+                        <div class="col-6">Front: <span id="patrol-full-front">0</span></div>
+                        <div class="col-6">Right: <span id="patrol-full-right">0</span></div>
+                        <div class="col-6">Back: <span id="patrol-full-back">0</span></div>
+                        <div class="col-6">Left: <span id="patrol-full-left">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- YOLO Shutdown Confirmation Modal -->
+<div class="modal fade" id="yoloShutdownModal" tabindex="-1" aria-labelledby="yoloShutdownLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="yoloShutdownLabel"><i class="bi bi-exclamation-triangle"></i> Terminate YOLO Pipeline?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>The YOLO pipeline is still running. Would you like to terminate it?</p>
+                <p class="text-muted">Auto-shutting down in: <span id="yoloShutdownCountdown">30</span> seconds</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Running</button>
+                <button type="button" class="btn btn-danger" id="btnTerminateYolo">
+                    <i class="bi bi-stop-fill"></i> Terminate YOLO
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="patrolSummaryModal" tabindex="-1" aria-labelledby="patrolSummaryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patrolSummaryLabel"><i class="bi bi-clipboard-data"></i> Patrol Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div><strong>Route:</strong> <span id="patrolSummaryRoute">-</span></div>
+                    <div><strong>Robot:</strong> <span id="patrolSummaryRobot">-</span></div>
+                    <div><strong>Start:</strong> <span id="patrolSummaryStart">-</span></div>
+                    <div><strong>End:</strong> <span id="patrolSummaryEnd">-</span></div>
+                    <div><strong>Total Violations:</strong> <span id="patrolSummaryViolations">0</span></div>
+                    <div><strong>Total People:</strong> <span id="patrolSummaryPeople">0</span></div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Waypoint</th>
+                                <th>Violations</th>
+                                <th>People</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patrolSummaryBody">
+                            <tr><td colspan="3" class="text-center text-muted">No waypoint summary available</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/patrol_control.js') }}"></script>
+{% endblock %}
