@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Robots - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-robot"></i> Robots Management</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRobotModal">
+            <i class="bi bi-plus-circle"></i> Add Robot
+        </button>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Serial Number</th>
+                            <th>Connection</th>
+                            <th>Battery</th>
+                            <th>Location</th>
+                            <th>Waypoints</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="robots-table-body">
+                        {% for robot in robots %}
+                        <tr data-robot-id="{{ robot.id }}">
+                            <td>{{ robot.name }}</td>
+                            <td><code>{{ robot.serial_number }}</code></td>
+                            <td>
+                                <span class="badge connection-badge">Disconnected</span>
+                            </td>
+                            <td>
+                                <span class="battery-level">{{ robot.battery_level }}%</span>
+                                <span class="charging-status badge bg-secondary ms-2">
+                                    {{ 'Charging' if robot.is_charging else 'Idle' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="current-location">{{ robot.current_location or 'Unknown' }}</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info btn-view-waypoints" data-robot-id="{{ robot.id }}">
+                                    <i class="bi bi-geo-alt"></i> View
+                                </button>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-success btn-connect" data-robot-id="{{ robot.id }}">
+                                        <i class="bi bi-wifi"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary btn-disconnect" data-robot-id="{{ robot.id }}">
+                                        <i class="bi bi-wifi-off"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-warning btn-edit" data-robot-id="{{ robot.id }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger btn-delete" data-robot-id="{{ robot.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Robot Modal -->
+<div class="modal fade" id="addRobotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Robot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-robot-form">
+                    <div class="mb-3">
+                        <label for="robot-name" class="form-label">Robot Name *</label>
+                        <input type="text" class="form-control" id="robot-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="robot-serial" class="form-label">Serial Number *</label>
+                        <input type="text" class="form-control" id="robot-serial" required>
+                    </div>
+                    <hr>
+                    <h6>MQTT Configuration</h6>
+                    <div class="mb-3">
+                        <label for="mqtt-broker" class="form-label">Broker URL</label>
+                        <input type="text" class="form-control" id="mqtt-broker" placeholder="Leave empty to use default">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mqtt-port" class="form-label">Port</label>
+                        <input type="number" class="form-control" id="mqtt-port" placeholder="8883">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mqtt-username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="mqtt-username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="mqtt-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="mqtt-password">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="mqtt-tls" checked>
+                        <label class="form-check-label" for="mqtt-tls">Use TLS/SSL</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-save-robot">Add Robot</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Robot Modal -->
+<div class="modal fade" id="editRobotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Robot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-robot-form">
+                    <input type="hidden" id="edit-robot-id">
+                    <div class="mb-3">
+                        <label for="edit-robot-name" class="form-label">Robot Name *</label>
+                        <input type="text" class="form-control" id="edit-robot-name" required>
+                    </div>
+                    <hr>
+                    <h6>MQTT Configuration</h6>
+                    <div class="mb-3">
+                        <label for="edit-mqtt-broker" class="form-label">Broker URL</label>
+                        <input type="text" class="form-control" id="edit-mqtt-broker">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-mqtt-port" class="form-label">Port</label>
+                        <input type="number" class="form-control" id="edit-mqtt-port">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-mqtt-username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="edit-mqtt-username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-mqtt-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="edit-mqtt-password">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="edit-mqtt-tls" checked>
+                        <label class="form-check-label" for="edit-mqtt-tls">Use TLS/SSL</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-update-robot">Update Robot</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Waypoints Modal -->
+<div class="modal fade" id="waypointsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Robot Waypoints</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="waypoints-list" class="list-group">
+                    <!-- Waypoints will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/robots.js') }}"></script>
+{% endblock %}

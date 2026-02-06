@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patrolling - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #00a4ef 0%, #0066cc 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #00a4ef;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .animation {
+            margin: 30px 0;
+        }
+        .dot {
+            height: 20px;
+            width: 20px;
+            margin: 0 8px;
+            background-color: #00a4ef;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .info-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #00a4ef;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>Patrolling Active</h1>
+        <p class="status-text">Temi is currently patrolling your facility</p>
+
+        <div class="animation">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Status:</strong> Active Patrol</p>
+            <p><strong>Mode:</strong> Autonomous Navigation</p>
+            <p><strong>Safety:</strong> Monitoring in Progress</p>
+        </div>
+    </div>
+</body>
+</html>

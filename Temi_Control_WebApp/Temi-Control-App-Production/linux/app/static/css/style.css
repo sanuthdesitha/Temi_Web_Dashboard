@@ -1,0 +1,329 @@
+/* Custom styles for Temi Control Application */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #0dcaf0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 2px solid #f0f0f0;
+    font-weight: 600;
+}
+
+/* Robot Cards */
+.robot-card {
+    height: 100%;
+}
+
+.connection-status, .connection-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.connection-status.connected, .connection-badge.connected {
+    background-color: var(--success-color) !important;
+}
+
+.connection-status.disconnected, .connection-badge.disconnected {
+    background-color: var(--danger-color) !important;
+}
+
+/* Battery Display */
+.battery-level {
+    font-weight: bold;
+}
+
+.battery-bar {
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Battery level colors */
+.battery-high {
+    background-color: var(--success-color) !important;
+}
+
+.battery-medium {
+    background-color: var(--warning-color) !important;
+}
+
+.battery-low {
+    background-color: var(--danger-color) !important;
+}
+
+/* Patrol Status */
+.patrol-status {
+    font-size: 0.75rem;
+}
+
+.patrol-status.running {
+    background-color: var(--success-color) !important;
+}
+
+.patrol-status.paused {
+    background-color: var(--warning-color) !important;
+}
+
+.patrol-status.stopped, .patrol-status.idle {
+    background-color: var(--secondary) !important;
+}
+
+/* Activity Log */
+.activity-log {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.log-entry {
+    padding: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.log-entry:hover {
+    background-color: #f8f9fa;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-info {
+    border-left: 3px solid var(--info-color);
+}
+
+.log-warning {
+    border-left: 3px solid var(--warning-color);
+    background-color: #fff3cd;
+}
+
+.log-error {
+    border-left: 3px solid var(--danger-color);
+    background-color: #f8d7da;
+}
+
+/* Waypoint Builder */
+.waypoint-item {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: move;
+    transition: background-color 0.2s;
+}
+
+.waypoint-item:hover {
+    background-color: #f8f9fa;
+}
+
+.waypoint-item.dragging {
+    opacity: 0.5;
+}
+
+.waypoint-handle {
+    cursor: move;
+    color: #6c757d;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.btn-group .btn {
+    transform: none;
+}
+
+.btn-group .btn:hover {
+    transform: none;
+}
+
+/* Tables */
+.table {
+    background-color: #fff;
+}
+
+.table thead {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Modals */
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: 4px;
+}
+
+/* Forms */
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Loading Spinner */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 4px !important;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Utility classes */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.shadow {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Schedules - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="mb-0"><i class="bi bi-calendar-event"></i> Patrol Schedules</h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" id="refreshSchedulesBtn">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                <i class="bi bi-plus-circle"></i> New Schedule
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-task"></i> Active Schedules</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Route</th>
+                            <th>Robot</th>
+                            <th>Type</th>
+                            <th>Config</th>
+                            <th>Last Run</th>
+                            <th>Next Run</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedulesTableBody">
+                        <tr><td colspan="9" class="text-center text-muted">Loading schedules...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Schedule Execution History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Schedule</th>
+                            <th>Route</th>
+                            <th>Robot</th>
+                            <th>Started</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleHistoryBody">
+                        <tr><td colspan="6" class="text-center text-muted">Loading history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleModalLabel">
+                    <i class="bi bi-calendar-plus"></i> Create Schedule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <input type="hidden" id="scheduleId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Schedule Name</label>
+                            <input type="text" class="form-control" id="scheduleName" placeholder="Morning Patrol" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Route</label>
+                            <select class="form-select" id="scheduleRoute" required>
+                                <option value="">Select route</option>
+                                {% for route in routes %}
+                                <option value="{{ route.id }}">{{ route.name }} ({{ route.robot_name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Schedule Type</label>
+                            <select class="form-select" id="scheduleType">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="once">One-time</option>
+                                <option value="custom">Custom (JSON)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="scheduleTime" value="09:00">
+                        </div>
+                    </div>
+
+                    <div id="weeklyConfig" class="mb-3" style="display:none;">
+                        <label class="form-label">Weekly Days</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for day in ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}
+                            <label class="btn btn-outline-secondary btn-sm">
+                                <input type="checkbox" class="form-check-input me-1 weekly-day" value="{{ day|lower }}">
+                                {{ day }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div id="onceConfig" class="mb-3" style="display:none;">
+                        <label class="form-label">Run Date</label>
+                        <input type="date" class="form-control" id="scheduleDate">
+                    </div>
+
+                    <div id="customConfig" class="mb-3" style="display:none;">
+                        <label class="form-label">Custom JSON</label>
+                        <textarea class="form-control" id="scheduleCustom" rows="3"
+                                  placeholder='{"cron":"0 9 * * 1-5"}'></textarea>
+                        <div class="form-text">Provide a JSON configuration object for advanced scheduling.</div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="scheduleEnabled" checked>
+                        <label class="form-check-label" for="scheduleEnabled">Enabled</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveScheduleBtn">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/schedules.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Temi Control{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if username %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-robot"></i> Temi Control
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('robots') }}"><i class="bi bi-robot"></i> Robots</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('routes') }}"><i class="bi bi-map"></i> Routes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('schedules_page') }}"><i class="bi bi-calendar-event"></i> Schedules</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('patrol_control') }}"><i class="bi bi-activity"></i> Patrol Control</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('commands_page') }}"><i class="bi bi-terminal"></i> Commands</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('sdk_commands_page') }}"><i class="bi bi-cpu"></i> SDK Control</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('position_tracking_page') }}"><i class="bi bi-geo-alt"></i> Position Tracking</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('map_management_page') }}"><i class="bi bi-map"></i> Map Management</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('yolo_monitor') }}"><i class="bi bi-eye"></i> YOLO Monitor</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('mqtt_monitor') }}"><i class="bi bi-broadcast"></i> MQTT Monitor</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('violations_page') }}"><i class="bi bi-shield-exclamation"></i> Violations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('detection_sessions_page') }}"><i class="bi bi-clipboard-data"></i> Detection Sessions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logs') }}"><i class="bi bi-card-list"></i> Logs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('settings_page') }}"><i class="bi bi-gear"></i> Settings</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <main class="{% if username %}container-fluid py-4{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if username %}
+    <div id="global-patrol-panel" class="position-fixed bottom-0 end-0 m-3" style="display:none; z-index: 2000; width: 380px;">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-activity"></i> Patrol Control</span>
+                <button class="btn btn-sm btn-outline-light" id="patrol-panel-toggle">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+            <div class="card-body" id="patrol-panel-body">
+                <div class="mb-2">
+                    <strong>Robot:</strong> <span id="patrol-robot-name">-</span><br>
+                    <strong>Route:</strong> <span id="patrol-route-name">-</span><br>
+                    <strong>Status:</strong> <span id="patrol-state">-</span><br>
+                    <strong>Loop:</strong> <span id="patrol-loop">-</span> |
+                    <strong>Progress:</strong> <span id="patrol-progress">-</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Battery:</strong> <span id="patrol-battery">-</span><br>
+                    <strong>Location:</strong> <span id="patrol-location">-</span>
+                </div>
+                <div class="mb-2">
+                    <img id="patrolStreamImg" class="img-fluid rounded border" alt="Live Stream">
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Violations: <strong id="patrol-violations">0</strong></span>
+                        <span>People: <strong id="patrol-people">0</strong></span>
+                    </div>
+                    <div class="row mt-1">
+                        <div class="col-6 small">Front: <span id="patrol-front">0</span></div>
+                        <div class="col-6 small">Right: <span id="patrol-right">0</span></div>
+                        <div class="col-6 small">Back: <span id="patrol-back">0</span></div>
+                        <div class="col-6 small">Left: <span id="patrol-left">0</span></div>
+                    </div>
+                </div>
+                <div class="btn-group w-100 mb-2" role="group">
+                    <button class="btn btn-warning btn-sm" id="patrol-pause-btn"><i class="bi bi-pause"></i> Pause</button>
+                    <button class="btn btn-success btn-sm" id="patrol-resume-btn" style="display:none;"><i class="bi bi-play"></i> Resume</button>
+                    <button class="btn btn-danger btn-sm" id="patrol-stop-btn"><i class="bi bi-stop"></i> Stop</button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-danger btn-sm w-100" id="patrol-emergency-stop-btn">
+                        <i class="bi bi-exclamation-octagon"></i> Emergency Stop
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm w-100" id="patrol-home-btn">
+                        <i class="bi bi-house"></i> Send Home
+                    </button>
+                </div>
+                <div class="mt-2">
+                    <label for="patrol-speed-global" class="form-label">Speed</label>
+                    <input type="range" class="form-range" id="patrol-speed-global" min="0.1" max="1.0" step="0.1" value="0.5">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="patrolStopModal" tabindex="-1" aria-labelledby="patrolStopModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="patrolStopModalLabel"><i class="bi bi-house"></i> Send to Home Base?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Do you want Temi to return to home base after stopping patrol?</p>
+                    <small class="text-muted">Auto-send in <span id="patrolStopCountdown">15</span> seconds.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="patrolStopNo">No</button>
+                    <button type="button" class="btn btn-primary" id="patrolStopYes">Yes, send home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Toastr CSS & JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"
+            onerror="(function(){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js';document.head.appendChild(s);})();"></script>
+    <!-- jQuery (optional, for easier DOM manipulation) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+            onerror="(function(){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js';document.head.appendChild(s);})();"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Global Violation Alert Listener -->
+    <script>
+        (function() {
+            // Listen for violation alerts on all pages
+            if (window.socket) {
+                window.socket.on('violation_alert', function(data) {
+                    // Ensure location is a string
+                    const location = typeof data.location === 'object'
+                        ? JSON.stringify(data.location)
+                        : (data.location || 'Unknown');
+
+                    // Show toast notification
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(
+                            `Violation detected at ${location}: ${data.violation_type || 'Unknown'}`,
+                            '🚨 Safety Alert',
+                            {
+                                timeOut: 10000,
+                                closeButton: true,
+                                progressBar: true
+                            }
+                        );
+                    }
+
+                    // Log to console for debugging
+                    console.log('Global violation alert received:', data);
+                });
+            }
+        })();
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

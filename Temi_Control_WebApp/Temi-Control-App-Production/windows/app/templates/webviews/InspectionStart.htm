@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection Starting - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #00a4ef 0%, #0066cc 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #00a4ef;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .scanner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 30px auto;
+        }
+        .scanner-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #00a4ef;
+            border-radius: 50%;
+            animation: scan-expand 2s infinite;
+        }
+        .scanner-circle:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .scanner-circle:nth-child(2) {
+            animation-delay: 0.7s;
+        }
+        .scanner-circle:nth-child(3) {
+            animation-delay: 1.4s;
+        }
+        @keyframes scan-expand {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        .scanner-center {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #00a4ef;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .info-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #00a4ef;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        .warning-badge {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>Starting Inspection</h1>
+        <p class="status-text">Scanning for Safety Compliance</p>
+
+        <div class="scanner">
+            <div class="scanner-circle"></div>
+            <div class="scanner-circle"></div>
+            <div class="scanner-circle"></div>
+            <div class="scanner-center"></div>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Status:</strong> Inspection Active</p>
+            <p><strong>Mode:</strong> Safety Monitoring</p>
+            <p><strong>Detection:</strong> Real-time PPE Analysis</p>
+        </div>
+
+        <div class="warning-badge">
+            Please ensure area is clear of obstacles
+        </div>
+    </div>
+</body>
+</html>

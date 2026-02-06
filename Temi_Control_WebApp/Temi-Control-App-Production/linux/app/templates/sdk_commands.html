@@ -1,0 +1,839 @@
+{% extends 'base.html' %}
+
+{% block title %}SDK Commands - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>
+                <i class="bi bi-terminal"></i> Temi SDK Commands
+            </h1>
+            <p class="text-muted">Control robot via SDK methods</p>
+        </div>
+    </div>
+
+    <!-- Robot Selection -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary">
+            <h5 class="mb-0">Select Robot</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-8">
+                    <label for="robotSelect" class="form-label">Robot</label>
+                    <select class="form-select" id="robotSelect" onchange="onRobotSelected()">
+                        <option value="">-- Select a robot --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" onclick="loadRobotsList()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Robots
+                    </button>
+                </div>
+            </div>
+            <div id="robotInfo" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>Serial:</strong> <span id="infoSerial"></span> |
+                    <strong>Battery:</strong> <span id="infoBattery"></span> |
+                    <strong>Status:</strong> <span id="infoStatus"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Command Groups -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tabSystem">System</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabAudio">Audio</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabUI">UI</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabSensor">Sensor</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabInfo">Info</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabSettings">Settings</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- SYSTEM TAB -->
+        <div id="tabSystem" class="tab-pane fade show active">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-danger">
+                            <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Restart Robot</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Reboot the robot system.</p>
+                            <button class="btn btn-danger btn-lg w-100" onclick="promptAdminPassword('restart')">
+                                <i class="bi bi-shield-lock"></i> Restart Now
+                            </button>
+                            <div id="systemResponse" class="alert alert-info mt-3" style="display: none;">
+                                <span id="systemMessage"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-dark">
+                            <h5 class="mb-0"><i class="bi bi-power"></i> Shutdown Robot</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Power down the robot.</p>
+                            <button class="btn btn-dark btn-lg w-100" onclick="promptAdminPassword('shutdown')">
+                                <i class="bi bi-shield-lock"></i> Shutdown Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIO TAB -->
+        <div id="tabAudio" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info">
+                            <h5 class="mb-0"><i class="bi bi-volume-up"></i> Volume Control</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="volumeSlider" class="form-label">Volume Level (0-10)</label>
+                                <input type="range" min="0" max="10" value="5" id="volumeSlider" class="form-range">
+                                <small class="form-text text-muted">Current: <span id="volumeDisplay">5</span></small>
+                            </div>
+                            <button class="btn btn-info w-100" onclick="setVolume()">
+                                Set Volume
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info">
+                            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Get Volume</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Query current volume level.</p>
+                            <button class="btn btn-info w-100" onclick="sendCommand('audio', 'getVolume', {})">
+                                Get Volume
+                            </button>
+                            <div id="volumeResponse" class="mt-3" style="display: none;">
+                                <div class="alert alert-success">
+                                    Current Volume: <strong id="volumeValue"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0"><i class="bi bi-stop-circle"></i> Cancel TTS</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Stop all ongoing speech synthesis.</p>
+                            <button class="btn btn-warning w-100" onclick="sendCommand('audio', 'cancelTts', {})">
+                                Cancel TTS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI TAB -->
+        <div id="tabUI" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-success">
+                            <h5 class="mb-0"><i class="bi bi-arrow-bar-up"></i> Top Bar</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-success w-100 mb-2" onclick="sendCommand('ui', 'showTopBar', {})">
+                                Show Top Bar
+                            </button>
+                            <button class="btn btn-warning w-100" onclick="sendCommand('ui', 'hideTopBar', {})">
+                                Hide Top Bar
+                            </button>
+                            <div id="uiResponse" class="alert alert-info mt-3" style="display: none;">
+                                <span id="uiMessage"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-secondary">
+                            <h5 class="mb-0"><i class="bi bi-controller"></i> Hard Buttons</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="hardButtonsToggle">
+                                <label class="form-check-label" for="hardButtonsToggle">
+                                    Lock Hard Buttons
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="toggleHardButtons()">
+                                Apply Setting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-primary">
+                            <h5 class="mb-0"><i class="bi bi-map"></i> Navigation Billboard</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="billboardToggle" checked>
+                                <label class="form-check-label" for="billboardToggle">
+                                    Show Navigation Billboard
+                                </label>
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="toggleBillboard()">
+                                Apply Setting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info">
+                            <h5 class="mb-0"><i class="bi bi-app-indicator"></i> App List</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Show installed applications.</p>
+                            <button class="btn btn-info w-100" onclick="sendCommand('ui', 'showAppList', {})">
+                                Show App List
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SENSOR TAB -->
+        <div id="tabSensor" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-shield"></i> Cliff Detection</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="cliffToggle" checked>
+                                <label class="form-check-label" for="cliffToggle">
+                                    Enable
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="toggleSensor('cliff')">
+                                Apply
+                            </button>
+                            <div id="sensorResponse" class="alert alert-info mt-3" style="display: none;">
+                                <span id="sensorMessage"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Front TOF</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="frontTofToggle" checked>
+                                <label class="form-check-label" for="frontTofToggle">
+                                    Enable
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="toggleSensor('frontTof')">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-eye"></i> Back TOF</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="backTofToggle" checked>
+                                <label class="form-check-label" for="backTofToggle">
+                                    Enable
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="toggleSensor('backTof')">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFO TAB -->
+        <div id="tabInfo" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0"><i class="bi bi-battery-full"></i> Battery Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-warning w-100 mb-3" onclick="sendCommand('info', 'getBattery', {})">
+                                Get Battery Info
+                            </button>
+                            <div id="batteryResponse" style="display: none;">
+                                <div class="alert alert-info">
+                                    <strong>Percentage:</strong> <span id="batteryPercent"></span>% <br>
+                                    <strong>Charging:</strong> <span id="batteryCharging"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info">
+                            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Robot Version</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-info w-100 mb-2" onclick="sendCommand('info', 'getRoboxVersion', {})">
+                                Get Robox Version
+                            </button>
+                            <button class="btn btn-info w-100" onclick="sendCommand('info', 'getLauncherVersion', {})">
+                                Get Launcher Version
+                            </button>
+                            <div id="versionResponse" style="display: none;">
+                                <div class="alert alert-success mt-3">
+                                    <strong>Robox:</strong> <span id="roboxVersion"></span> <br>
+                                    <strong>Launcher:</strong> <span id="launcherVersion"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-success">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Saved Locations</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-success w-100 mb-3" onclick="sendCommand('info', 'getLocations', {})">
+                                Get Locations
+                            </button>
+                            <div id="locationsResponse" style="display: none;">
+                                <ul id="locationsList" class="list-group"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-primary">
+                            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Robot Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-primary w-100 mb-3" onclick="sendCommand('info', 'isReady', {})">
+                                Check Robot Ready
+                            </button>
+                            <div id="readyResponse" style="display: none;">
+                                <div class="alert alert-success">
+                                    Robot is <strong id="readyStatus"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="tabSettings" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Navigation Speed</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="speedSelect" class="form-label">Speed Level</label>
+                                <select class="form-select" id="speedSelect">
+                                    <option value="SLOW">Slow</option>
+                                    <option value="MEDIUM" selected>Medium</option>
+                                    <option value="HIGH">High</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="setNavigationSpeed()">
+                                Set Speed
+                            </button>
+                            <div id="settingsResponse" class="alert alert-info mt-3" style="display: none;">
+                                <span id="settingsMessage"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-shield-check"></i> Safety Level</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="safetySelect" class="form-label">Safety Level</label>
+                                <select class="form-select" id="safetySelect">
+                                    <option value="MEDIUM" selected>Medium</option>
+                                    <option value="HIGH">High</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="setNavigationSafety()">
+                                Set Safety
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-toggle-on"></i> Privacy Mode</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="privacyToggle">
+                                <label class="form-check-label" for="privacyToggle">
+                                    Enable Privacy Mode
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="togglePrivacyMode()">
+                                Apply Setting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-mic"></i> Wakeup Control</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="wakeupToggle">
+                                <label class="form-check-label" for="wakeupToggle">
+                                    Disable Wakeup
+                                </label>
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="toggleWakeup()">
+                                Apply Setting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-rulers"></i> Obstacle Distance</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="obstacleDistance" class="form-label">Distance (0-100)</label>
+                                <input type="number" min="0" max="100" value="0" id="obstacleDistance" class="form-control">
+                            </div>
+                            <button class="btn btn-secondary w-100" onclick="setObstacleDistance()">
+                                Set Distance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Display -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Last Response</h5>
+        </div>
+        <div class="card-body">
+            <pre id="responseDisplay" style="max-height: 300px; overflow-y: auto; background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 0;">Ready...</pre>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div class="modal fade" id="adminPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-shield-exclamation"></i> Admin Password Required</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>This is a protected action. Please enter admin password:</p>
+                <input type="password" id="adminPasswordInput" class="form-control" placeholder="Enter admin password">
+                <small class="text-muted d-block mt-2">Default: admin123</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="executeAdminCommand()">Execute</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="/static/js/temi-sdk-commands.js"></script>
+<script>
+// Global state
+let temiCommands = null;
+let currentRobot = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRobotsList();
+
+    // Volume slider display
+    document.getElementById('volumeSlider').addEventListener('input', function(e) {
+        document.getElementById('volumeDisplay').textContent = e.target.value;
+    });
+});
+
+// Load list of robots
+function loadRobotsList() {
+    fetch('/api/robots')
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('robotSelect');
+            select.innerHTML = '<option value="">-- Select a robot --</option>';
+
+            if (data.robots) {
+                data.robots.forEach(robot => {
+                    const option = document.createElement('option');
+                    option.value = robot.serial_number;
+                    option.textContent = `${robot.name || 'Unknown'} (${robot.serial_number})`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error loading robots:', err);
+            toastr.error('Failed to load robots');
+        });
+}
+
+// On robot selected
+function onRobotSelected() {
+    const serial = document.getElementById('robotSelect').value;
+    console.log('[SDK] Robot selected:', serial);
+
+    if (!serial) {
+        document.getElementById('robotInfo').style.display = 'none';
+        temiCommands = null;
+        console.log('[SDK] No robot selected');
+        return;
+    }
+
+    try {
+        // Initialize commands helper
+        temiCommands = new TemiSDKCommands(serial);
+        currentRobot = serial;
+        console.log('[SDK] TemiSDKCommands initialized for:', serial);
+
+        // Show robot info
+        document.getElementById('robotInfo').style.display = 'block';
+        document.getElementById('infoSerial').textContent = serial;
+
+        // Show toast
+        if (typeof toastr !== 'undefined') {
+            toastr.info(`Robot ${serial} selected`);
+        }
+
+        // Get initial robot info
+        console.log('[SDK] Requesting battery and status...');
+        temiCommands.getBattery().catch(err => console.error('[SDK] getBattery error:', err));
+        temiCommands.isReady().catch(err => console.error('[SDK] isReady error:', err));
+    } catch (err) {
+        console.error('[SDK] Error initializing robot:', err);
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Error initializing robot: ' + err.message);
+        }
+    }
+}
+
+// Global variable to store pending admin command
+let pendingAdminCommand = { category: null, action: null };
+
+// Prompt for admin password for protected commands
+function promptAdminPassword(action) {
+    pendingAdminCommand = { category: 'system', action: action };
+    document.getElementById('adminPasswordInput').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('adminPasswordModal'));
+    modal.show();
+    document.getElementById('adminPasswordInput').focus();
+}
+
+// Execute admin command after password verification
+function executeAdminCommand() {
+    const password = document.getElementById('adminPasswordInput').value;
+    const correctPassword = 'admin123'; // Change this to your actual admin password
+
+    if (password !== correctPassword) {
+        toastr.error('Invalid admin password');
+        return;
+    }
+
+    // Hide modal
+    bootstrap.Modal.getInstance(document.getElementById('adminPasswordModal')).hide();
+
+    // Execute the command
+    sendCommand(pendingAdminCommand.category, pendingAdminCommand.action, {});
+}
+
+// Allow Enter key to execute
+document.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter' && document.getElementById('adminPasswordModal').classList.contains('show')) {
+        executeAdminCommand();
+    }
+});
+
+// Send generic command
+async function sendCommand(category, action, payload) {
+    if (!temiCommands) {
+        toastr.error('Please select a robot first');
+        return;
+    }
+
+    try {
+        const result = await temiCommands.send(category, action, payload);
+        updateResponse(result);
+    } catch (err) {
+        console.error('Command error:', err);
+        toastr.error(`Error: ${err.message}`);
+    }
+}
+
+// Volume control
+function setVolume() {
+    const level = parseInt(document.getElementById('volumeSlider').value);
+    sendCommand('audio', 'setVolume', { level });
+}
+
+// Navigation speed
+function setNavigationSpeed() {
+    const speed = document.getElementById('speedSelect').value;
+    sendCommand('settings', 'setGoToSpeed', { speed });
+}
+
+// Navigation safety
+function setNavigationSafety() {
+    const level = document.getElementById('safetySelect').value;
+    sendCommand('settings', 'setNavigationSafety', { level });
+}
+
+// Toggle hard buttons
+function toggleHardButtons() {
+    const disabled = document.getElementById('hardButtonsToggle').checked;
+    sendCommand('ui', 'setHardButtonsDisabled', { disabled });
+}
+
+// Toggle billboard
+function toggleBillboard() {
+    const disabled = !document.getElementById('billboardToggle').checked;
+    sendCommand('ui', 'toggleNavigationBillboard', { disabled });
+}
+
+// Toggle sensors
+function toggleSensor(sensor) {
+    const sensorMap = {
+        'cliff': 'setCliffDetectionEnabled',
+        'frontTof': 'setFrontTOFEnabled',
+        'backTof': 'setBackTOFEnabled'
+    };
+
+    const toggleMap = {
+        'cliff': 'cliffToggle',
+        'frontTof': 'frontTofToggle',
+        'backTof': 'backTofToggle'
+    };
+
+    const enabled = document.getElementById(toggleMap[sensor]).checked;
+    sendCommand('sensor', sensorMap[sensor], { enabled });
+}
+
+// Toggle privacy mode
+function togglePrivacyMode() {
+    const enabled = document.getElementById('privacyToggle').checked;
+    sendCommand('settings', 'setPrivacyMode', { enabled });
+}
+
+// Toggle wakeup
+function toggleWakeup() {
+    const disabled = document.getElementById('wakeupToggle').checked;
+    sendCommand('settings', 'toggleWakeup', { disabled });
+}
+
+// Set obstacle distance
+function setObstacleDistance() {
+    const distance = parseInt(document.getElementById('obstacleDistance').value);
+    sendCommand('settings', 'setMinimumObstacleDistance', { distance });
+}
+
+// Update response display
+function updateResponse(data) {
+    const responseEl = document.getElementById('responseDisplay');
+    responseEl.textContent = JSON.stringify(data, null, 2);
+}
+
+// Wait for socket to be available, then set up listeners
+function setupSocketListeners() {
+    const socket = window.socket;
+
+    if (!socket) {
+        console.warn('Socket.IO not connected yet, retrying...');
+        setTimeout(setupSocketListeners, 500);
+        return;
+    }
+
+    console.log('Setting up SDK commands socket listeners');
+
+    socket.on('mqtt_message', function(data) {
+        const topic = data.topic;
+        const payload = data.payload;
+
+        console.log('SDK Commands: MQTT message received:', topic);
+
+        const showResponse = (containerId, message) => {
+            const el = document.getElementById(containerId);
+            const msgEl = document.getElementById(containerId.replace('Response', 'Message'));
+            if (el && msgEl) {
+                msgEl.textContent = message || 'OK';
+                el.style.display = 'block';
+            }
+        };
+
+        // Update UI based on response
+        if (topic.includes('/status/battery')) {
+            const percent = payload.percentage ?? payload.percent ?? payload.battery_percentage ?? payload.battery ?? payload.level;
+            const charging = payload.isCharging ?? payload.is_charging ?? payload.charging;
+            if (percent !== undefined) {
+                document.getElementById('infoBattery').textContent = percent + '%';
+                document.getElementById('batteryPercent').textContent = percent;
+            }
+            document.getElementById('batteryCharging').textContent = charging ? 'Yes' : 'No';
+            document.getElementById('batteryResponse').style.display = 'block';
+            toastr.info('Battery updated');
+        }
+
+        if (topic.includes('/status/audio/volume')) {
+            const level = payload.volume_level ?? payload.level ?? payload.volume ?? payload.volume_percent;
+            let display = level;
+            if (level !== undefined && level > 10) {
+                display = Math.round(level / 10);
+            }
+            if (display !== undefined) {
+                document.getElementById('volumeValue').textContent = display;
+                document.getElementById('volumeResponse').style.display = 'block';
+            }
+        }
+
+        if (topic.includes('/status/info/ready')) {
+            document.getElementById('infoStatus').textContent = payload.ready ? 'Ready' : 'Not Ready';
+            document.getElementById('readyStatus').textContent = payload.ready ? 'READY' : 'NOT READY';
+            document.getElementById('readyResponse').style.display = 'block';
+            toastr.info('Status updated');
+        }
+
+        if (topic.includes('/status/info/roboxVersion')) {
+            document.getElementById('roboxVersion').textContent = payload.roboxVersion;
+            document.getElementById('versionResponse').style.display = 'block';
+            toastr.info('Version updated');
+        }
+
+        if (topic.includes('/status/info/launcherVersion')) {
+            document.getElementById('launcherVersion').textContent = payload.launcherVersion;
+            document.getElementById('versionResponse').style.display = 'block';
+        }
+
+        if (topic.includes('/status/info/locations')) {
+            const locations = payload.locations || [];
+            const list = document.getElementById('locationsList');
+            list.innerHTML = '';
+            locations.forEach(loc => {
+                const item = document.createElement('li');
+                item.className = 'list-group-item';
+                item.textContent = loc;
+                list.appendChild(item);
+            });
+            document.getElementById('locationsResponse').style.display = 'block';
+            toastr.info('Locations updated');
+        }
+
+        if (topic.includes('/status/command')) {
+            const cmd = payload.command || '';
+            const message = payload.message || payload.status || JSON.stringify(payload);
+            const uiCommands = ['showTopBar', 'hideTopBar', 'setHardButtonsDisabled', 'toggleNavigationBillboard', 'showAppList', 'setTopBadgeEnabled'];
+            const sensorCommands = ['setCliffDetectionEnabled', 'setFrontTOFEnabled', 'setBackTOFEnabled'];
+            const settingsCommands = ['setPrivacyMode', 'toggleWakeup', 'setAutoReturn', 'setNavigationSafety', 'setGoToSpeed', 'setMinimumObstacleDistance'];
+            if (uiCommands.includes(cmd)) {
+                showResponse('uiResponse', message);
+            } else if (sensorCommands.includes(cmd)) {
+                showResponse('sensorResponse', message);
+            } else if (settingsCommands.includes(cmd)) {
+                showResponse('settingsResponse', message);
+            } else {
+                showResponse('systemResponse', message);
+            }
+        }
+
+        if (topic.includes('/status/ui/')) {
+            showResponse('uiResponse', JSON.stringify(payload));
+        }
+
+        if (topic.includes('/status/sensor/')) {
+            showResponse('sensorResponse', JSON.stringify(payload));
+        }
+
+        if (topic.includes('/status/settings/')) {
+            showResponse('settingsResponse', JSON.stringify(payload));
+        }
+
+        updateResponse(payload);
+    });
+}
+
+// Set up listeners after page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(setupSocketListeners, 500);
+});
+</script>
+
+{% endblock %}

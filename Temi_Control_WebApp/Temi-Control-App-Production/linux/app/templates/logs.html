@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Logs - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-card-list"></i> Activity Logs</h1>
+        <div>
+            <button class="btn btn-warning" id="btn-clear-logs">
+                <i class="bi bi-trash"></i> Clear Logs
+            </button>
+            <button class="btn btn-info" id="btn-refresh-logs">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="filter-robot" class="form-label">Filter by Robot</label>
+                    <select class="form-select" id="filter-robot">
+                        <option value="">All Robots</option>
+                        {% for robot in robots %}
+                        <option value="{{ robot.id }}">{{ robot.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-level" class="form-label">Filter by Level</label>
+                    <select class="form-select" id="filter-level">
+                        <option value="">All Levels</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="filter-search" placeholder="Search logs...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="auto-refresh" checked>
+                        <label class="form-check-label" for="auto-refresh">Auto-refresh</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Logs Display -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">Timestamp</th>
+                            <th style="width: 80px;">Level</th>
+                            <th style="width: 150px;">Robot</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        {% for log in logs %}
+                        <tr class="log-entry log-{{ log.level }}" data-robot-id="{{ log.robot_id or '' }}" data-level="{{ log.level }}">
+                            <td><small>{{ log.created_at }}</small></td>
+                            <td>
+                                {% if log.level == 'info' %}
+                                <span class="badge bg-info">Info</span>
+                                {% elif log.level == 'warning' %}
+                                <span class="badge bg-warning text-dark">Warning</span>
+                                {% elif log.level == 'error' %}
+                                <span class="badge bg-danger">Error</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ log.robot_name or 'System' }}</small></td>
+                            <td>{{ log.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Live Log Stream (for WebSocket updates) -->
+    <div class="position-fixed bottom-0 start-0 m-3" style="width: 400px; max-height: 300px; overflow-y: auto; z-index: 1050; display: none;" id="live-log-panel">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-activity"></i> Live Feed</h6>
+                <button class="btn btn-sm btn-close btn-close-white" id="btn-close-live-feed"></button>
+            </div>
+            <div class="card-body p-2 bg-dark text-white" style="font-family: monospace; font-size: 0.85rem;" id="live-log-content">
+                <!-- Live logs will appear here -->
+            </div>
+        </div>
+    </div>
+    
+    <button class="btn btn-primary position-fixed bottom-0 start-0 m-3" id="btn-toggle-live-feed" style="z-index: 1040;">
+        <i class="bi bi-activity"></i> Live Feed
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/logs.js') }}"></script>
+{% endblock %}

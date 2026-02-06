@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrived Home - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #17a2b8;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .home-success {
+            font-size: 100px;
+            margin: 30px 0;
+            animation: home-land 0.8s ease-out;
+        }
+        @keyframes home-land {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .celebration-dots {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .celebration-dot {
+            width: 10px;
+            height: 10px;
+            background: #17a2b8;
+            border-radius: 50%;
+            animation: celebrate 0.6s ease-out;
+        }
+        .celebration-dot:nth-child(1) { animation-delay: 0s; }
+        .celebration-dot:nth-child(2) { animation-delay: 0.1s; }
+        .celebration-dot:nth-child(3) { animation-delay: 0.2s; }
+        .celebration-dot:nth-child(4) { animation-delay: 0.3s; }
+        .celebration-dot:nth-child(5) { animation-delay: 0.4s; }
+        @keyframes celebrate {
+            0% {
+                transform: scale(0) translateY(-20px);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+        .info-box {
+            background: #f0f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #17a2b8;
+        }
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        .summary-badge {
+            display: inline-block;
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>Patrol Complete</h1>
+        <p class="status-text">Successfully returned to home base</p>
+
+        <div class="home-success">✓</div>
+
+        <div class="celebration-dots">
+            <div class="celebration-dot"></div>
+            <div class="celebration-dot"></div>
+            <div class="celebration-dot"></div>
+            <div class="celebration-dot"></div>
+            <div class="celebration-dot"></div>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Status:</strong> At Home Base</p>
+            <p><strong>Mode:</strong> Idle - Ready for Next Task</p>
+            <p><strong>Battery:</strong> Ready for Charging</p>
+        </div>
+
+        <div class="summary-badge">
+            Patrol completed successfully! Check logs for detailed summary.
+        </div>
+    </div>
+</body>
+</html>

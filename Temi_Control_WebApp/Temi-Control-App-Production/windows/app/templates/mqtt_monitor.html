@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}MQTT Monitor - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                <div>
+                    <h2 class="mb-1"><i class="bi bi-broadcast"></i> MQTT Topic Monitor</h2>
+                    <p class="text-muted mb-0">Real-time monitoring of all MQTT messages sent and received</p>
+                </div>
+                <div class="d-flex align-items-center gap-3 mt-3 mt-md-0">
+                    <span class="badge bg-secondary" id="socketStatusBadge">Socket: Connecting...</span>
+                    <span class="badge bg-secondary" id="messageCountBadge">Messages: 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-sliders"></i> Control Panel</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoScrollSwitch" checked>
+                                <label class="form-check-label" for="autoScrollSwitch">
+                                    Auto-scroll to new messages
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pauseUpdatesSwitch">
+                                <label class="form-check-label" for="pauseUpdatesSwitch">
+                                    Pause updates
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <button class="btn btn-warning me-2" id="clearBtn">
+                                <i class="bi bi-trash"></i> Clear Messages
+                            </button>
+                            <span class="badge bg-secondary d-none d-md-inline">Messages tracked in this session</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Options -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-funnel"></i> Filters</h6>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group mb-3" role="group" id="topicCategoryGroup">
+                        <button type="button" class="btn btn-outline-secondary active" data-category="all">All</button>
+                        <button type="button" class="btn btn-outline-warning" data-category="command">Commands</button>
+                        <button type="button" class="btn btn-outline-info" data-category="status">Status</button>
+                        <button type="button" class="btn btn-outline-success" data-category="event">Events</button>
+                        <button type="button" class="btn btn-outline-danger" data-category="yolo">YOLO</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="robotFilter" class="form-label">Robot ID</label>
+                            <select class="form-select" id="robotFilter">
+                                <option value="">All Robots</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="topicFilter" class="form-label">Topic Filter</label>
+                            <input type="text" class="form-control" id="topicFilter" placeholder="e.g., status, event, yolo">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="payloadFilter" class="form-label">Payload Search</label>
+                            <input type="text" class="form-control" id="payloadFilter" placeholder="Search in payload...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Message History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="messageContainer" style="max-height: 600px; overflow-y: auto; background-color: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13px;">
+                        <div class="text-center text-muted p-5" id="noMessagesText">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No messages yet. Waiting for MQTT traffic...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.message-entry {
+    border-bottom: 1px solid #333;
+    padding: 10px 15px;
+    font-size: 12px;
+}
+
+.message-entry:hover {
+    background-color: #2d2d30;
+}
+
+.message-timestamp {
+    color: #858585;
+    font-weight: bold;
+}
+
+.message-robot {
+    color: #4ec9b0;
+}
+
+.message-topic {
+    color: #ce9178;
+}
+
+.message-payload {
+    color: #d4d4d4;
+    background-color: #252526;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.topic-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/mqtt_monitor.js') }}"></script>
+{% endblock %}

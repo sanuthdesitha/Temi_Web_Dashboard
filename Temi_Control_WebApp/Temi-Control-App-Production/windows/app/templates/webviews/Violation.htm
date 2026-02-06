@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Violation Detected - Temi Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .nokia-logo {
+            width: 120px;
+            margin: 0 auto 30px;
+            font-size: 48px;
+            font-weight: bold;
+            color: #dc3545;
+            letter-spacing: 2px;
+        }
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .status-text {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .alert-icon {
+            font-size: 80px;
+            margin: 30px 0;
+            animation: alert-pulse 1.5s infinite;
+        }
+        @keyframes alert-pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+        }
+        .alert-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        .alert-box p {
+            color: #856404;
+            font-size: 14px;
+            margin: 8px 0;
+            font-weight: 600;
+        }
+        .violation-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .violation-details p {
+            color: #666;
+            font-size: 13px;
+            margin: 6px 0;
+        }
+        .info-box {
+            background: #ffe0e0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 4px solid #dc3545;
+        }
+        .info-box p {
+            color: #721c24;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nokia-logo">NOKIA</div>
+        <h1>VIOLATION DETECTED</h1>
+        <p class="status-text">Safety protocol violation has been identified</p>
+
+        <div class="alert-icon">⚠️</div>
+
+        <div class="alert-box">
+            <p>Please follow safety protocols and wear proper PPE</p>
+            <p>This violation has been recorded for your records</p>
+        </div>
+
+        <div class="violation-details">
+            <p><strong>Type:</strong> PPE Non-Compliance</p>
+            <p><strong>Action:</strong> Immediate corrective action required</p>
+            <p><strong>Status:</strong> Under Investigation</p>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Important:</strong> Ensure all personnel wear required PPE</p>
+            <p><strong>Contact:</strong> Safety Manager for clarification</p>
+        </div>
+    </div>
+</body>
+</html>

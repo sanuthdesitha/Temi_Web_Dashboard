@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Violations - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-shield-exclamation"></i> PPE Violations</h2>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Total Violations</h5>
+                    <h2 id="total-violations">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-clock"></i> Today</h5>
+                    <h2 id="today-violations">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-exclamation-octagon"></i> Needs Action (High)</h5>
+                    <h2 id="needs-action-violations">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-hourglass"></i> Pending Actions</h5>
+                    <h2 id="pending-violations">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Robot</label>
+                    <select id="filter-robot" class="form-select">
+                        <option value="">All Robots</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Violation Type</label>
+                    <select id="filter-type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="no_helmet">No Helmet</option>
+                        <option value="no_vest">No Safety Vest</option>
+                        <option value="no_gloves">No Gloves</option>
+                        <option value="no_goggles">No Safety Goggles</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Severity</label>
+                    <select id="filter-severity" class="form-select">
+                        <option value="">All</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select id="filter-status" class="form-select">
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="acknowledged">Acknowledged</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" id="filter-start-date" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" id="filter-end-date" class="form-control">
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                    <button class="btn btn-success" onclick="exportViolations()">
+                        <i class="bi bi-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="bi bi-table"></i> Violation History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Robot</th>
+                            <th>Location</th>
+                            <th>Timestamp</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-table-body">
+                        <tr>
+                            <td colspan="8" class="text-center">Loading violations...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary By Period -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Summary By Period</h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="summary-group-by">
+                        <option value="day">Daily</option>
+                        <option value="week">Weekly</option>
+                        <option value="month">Monthly</option>
+                        <option value="year">Yearly</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary" id="btn-refresh-summary">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Total</th>
+                            <th>High</th>
+                            <th>Medium</th>
+                            <th>Low</th>
+                            <th>Acknowledged</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-summary-body">
+                        <tr>
+                            <td colspan="6" class="text-center">Loading summary...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violation Details Modal -->
+<div class="modal fade" id="violationDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Violation Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="violation-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="btn-acknowledge-violation">
+                    <i class="bi bi-check-circle"></i> Acknowledge
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/violations.js') }}"></script>
+{% endblock %}

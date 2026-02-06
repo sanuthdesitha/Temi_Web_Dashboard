@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Commands - Temi Control{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4"><i class="bi bi-terminal"></i> Robot Commands</h1>
+
+    <!-- Robot Selection -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-robot"></i> Select Robot</h5>
+                </div>
+                <div class="card-body">
+                    <select class="form-select" id="selectedRobotId">
+                        <option value="">-- Select a Robot --</option>
+                        {% for robot in robots %}
+                        <option value="{{ robot.id }}">{{ robot.name }} ({{ robot.serial_number }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-2">
+                        <span class="badge bg-secondary" id="robotStatus">No robot selected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Text-to-Speech Command -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-mic"></i> Text-to-Speech (TTS)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Make the robot speak</p>
+                    <div class="mb-3">
+                        <label for="ttsUtterance" class="form-label">Message</label>
+                        <textarea class="form-control" id="ttsUtterance" rows="3"
+                                  placeholder="Enter text for robot to speak..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quick Messages</label>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary quick-tts"
+                                    data-text="Hello, I am Temi the robot.">
+                                <i class="bi bi-chat-left-text"></i> Hello
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary quick-tts"
+                                    data-text="Safety violation detected. Please follow safety protocols.">
+                                <i class="bi bi-shield-exclamation"></i> Safety Violation
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary quick-tts"
+                                    data-text="Patrol complete. Returning to home base.">
+                                <i class="bi bi-house"></i> Patrol Complete
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary w-100" id="sendTtsBtn">
+                        <i class="bi bi-volume-up"></i> Send TTS Command
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebView Command -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-window"></i> WebView</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Display HTML file or webpage</p>
+                    <div class="mb-3">
+                        <label for="webviewUrl" class="form-label">File Path or URL</label>
+                        <input type="text" class="form-control" id="webviewUrl"
+                               placeholder="e.g., file:///storage/emulated/0/temiscreens/Violation.htm">
+                        <div class="form-text">
+                            Local paths will be converted to: file:///storage/emulated/0/path
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quick Paths</label>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-info quick-webview"
+                                    data-path="file:///storage/emulated/0/temiscreens/Violation.htm">
+                                <i class="bi bi-file-earmark"></i> Violation Screen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info quick-webview"
+                                    data-path="file:///storage/emulated/0/temiscreens/Safety.htm">
+                                <i class="bi bi-file-earmark"></i> Safety Screen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info quick-webview"
+                                    data-path="file:///storage/emulated/0/temiscreens/Alert.htm">
+                                <i class="bi bi-file-earmark"></i> Alert Screen
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info quick-webview"
+                                    data-path="test_webview.html">
+                                <i class="bi bi-file-earmark"></i> Test Page
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-info w-100" id="sendWebviewBtn">
+                        <i class="bi bi-display"></i> Send WebView Command
+                    </button>
+                    <button class="btn btn-outline-dark w-100 mt-2" id="closeWebviewBtn">
+                        <i class="bi bi-x-square"></i> Close WebView
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Command -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-play-circle"></i> Video Playback</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Play video file or stream</p>
+                    <div class="mb-3">
+                        <label for="videoUrl" class="form-label">File Path or URL</label>
+                        <input type="text" class="form-control" id="videoUrl"
+                               placeholder="e.g., videos/safety.mp4">
+                        <div class="form-text">
+                            Supports MP4, AVI, YouTube URLs
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quick Videos</label>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success quick-video"
+                                    data-path="videos/safety_intro.mp4">
+                                <i class="bi bi-film"></i> Safety Intro
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success quick-video"
+                                    data-path="videos/patrol_demo.mp4">
+                                <i class="bi bi-film"></i> Patrol Demo
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success quick-video"
+                                    data-path="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                                <i class="bi bi-youtube"></i> YouTube Example
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-success w-100" id="sendVideoBtn">
+                        <i class="bi bi-play-fill"></i> Send Video Command
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movement Commands -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-arrows-move"></i> Movement</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Control robot movement</p>
+                    <div class="mb-3">
+                        <label for="gotoLocation" class="form-label">Go To Location</label>
+                        <input type="text" class="form-control" id="gotoLocation"
+                               placeholder="Enter waypoint name">
+                    </div>
+                    <button class="btn btn-warning w-100 mb-2" id="sendGotoBtn">
+                        <i class="bi bi-geo-alt"></i> Go To Waypoint
+                    </button>
+                    <button class="btn btn-outline-warning w-100 mb-2" id="sendHomeBtn">
+                        <i class="bi bi-house"></i> Go To Home
+                    </button>
+                    <button class="btn btn-danger w-100" id="sendStopBtn">
+                        <i class="bi bi-stop-circle"></i> Stop Movement
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation Command -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-clockwise"></i> Rotation</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Rotate robot in place</p>
+                    <div class="mb-3">
+                        <label for="rotationAngle" class="form-label">Angle (degrees)</label>
+                        <input type="number" class="form-control" id="rotationAngle"
+                               value="360" min="-360" max="360" step="45">
+                        <div class="form-text">
+                            Positive = clockwise, Negative = counter-clockwise
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-rotation"
+                                    data-angle="90">
+                                <i class="bi bi-arrow-clockwise"></i> 90° Right
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-rotation"
+                                    data-angle="-90">
+                                <i class="bi bi-arrow-counterclockwise"></i> 90° Left
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-rotation"
+                                    data-angle="180">
+                                <i class="bi bi-arrow-clockwise"></i> 180° Turn
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quick-rotation"
+                                    data-angle="360">
+                                <i class="bi bi-arrow-repeat"></i> 360° Scan
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary w-100" id="sendRotationBtn">
+                        <i class="bi bi-arrow-clockwise"></i> Rotate
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Commands -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Advanced</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Advanced robot controls</p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-dark" id="sendRepositionBtn">
+                            <i class="bi bi-geo"></i> Request Position
+                        </button>
+                        <button class="btn btn-outline-dark" id="sendStatusBtn">
+                            <i class="bi bi-info-circle"></i> Request Status
+                        </button>
+                        <button class="btn btn-outline-dark" id="sendWaypointsBtn">
+                            <i class="bi bi-map"></i> Request Waypoints
+                        </button>
+                        <button class="btn btn-outline-dark" id="sendBatteryBtn">
+                            <i class="bi bi-battery-half"></i> Request Battery
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom MQTT Command -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-code-slash"></i> Custom MQTT</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Send a raw MQTT topic/payload</p>
+                    <div class="mb-3">
+                        <label for="customTopic" class="form-label">Topic</label>
+                        <input type="text" class="form-control" id="customTopic"
+                               placeholder="temi/{serial}/command/...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="customPayload" class="form-label">Payload (JSON)</label>
+                        <textarea class="form-control" id="customPayload" rows="4"
+                                  placeholder='{"key":"value"}'></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100" id="sendCustomMqttBtn">
+                        <i class="bi bi-send"></i> Send Custom MQTT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Tilt -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-camera"></i> Camera Tilt</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Tilt camera up or down</p>
+                    <div class="mb-3">
+                        <label for="tiltAngle" class="form-label">Tilt Angle (degrees)</label>
+                        <input type="number" class="form-control" id="tiltAngle"
+                               value="0" min="-25" max="60" step="5">
+                        <div class="form-text">
+                            Range: -25° (down) to +60° (up)
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-info quick-tilt"
+                                    data-angle="60">
+                                <i class="bi bi-arrow-up"></i> Look Up (60°)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info quick-tilt"
+                                    data-angle="0">
+                                <i class="bi bi-dash"></i> Center (0°)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info quick-tilt"
+                                    data-angle="-25">
+                                <i class="bi bi-arrow-down"></i> Look Down (-25°)
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-info w-100" id="sendTiltBtn">
+                        <i class="bi bi-camera"></i> Tilt Camera
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position Tester -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Position Tester</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Test position tracking and visualization</p>
+                    <div class="mb-3 p-2 bg-light rounded" id="currentPositionInfo">
+                        <small class="text-muted">No position data</small>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" id="requestPositionBtn">
+                            <i class="bi bi-arrow-clockwise"></i> Request Position
+                        </button>
+                        <button class="btn btn-outline-success" id="viewPositionMapBtn">
+                            <i class="bi bi-map"></i> View Position Map
+                        </button>
+                        <button class="btn btn-outline-success" id="exportPositionBtn">
+                            <i class="bi bi-download"></i> Export Trajectory
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Volume Control and System Controls moved to SDK Commands page for centralized management -->
+    </div>
+
+    <!-- WASD Keyboard Control -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-keyboard"></i> WASD Keyboard Control</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Instructions:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li><kbd>W</kbd> - Move Forward</li>
+                                    <li><kbd>S</kbd> - Move Backward</li>
+                                    <li><kbd>A</kbd> - Turn Right</li>
+                                    <li><kbd>D</kbd> - Turn Left</li>
+                                    <li><kbd>Q</kbd> - Rotate Left</li>
+                                    <li><kbd>E</kbd> - Rotate Right</li>
+                                    <li><kbd>Space</kbd> - Emergency Stop</li>
+                                </ul>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="wasdControlEnabled">
+                                <label class="form-check-label" for="wasdControlEnabled">
+                                    <strong>Enable WASD Control</strong>
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="moveSpeed" class="form-label">Movement Speed</label>
+                                <input type="range" class="form-range" id="moveSpeed"
+                                       min="0.1" max="1.0" step="0.1" value="0.5">
+                                <div class="text-center">
+                                    <span class="badge bg-secondary" id="moveSpeedValue">0.5</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="turnSpeed" class="form-label">Turn Speed</label>
+                                <input type="range" class="form-range" id="turnSpeed"
+                                       min="0.1" max="1.0" step="0.1" value="0.5">
+                                <div class="text-center">
+                                    <span class="badge bg-secondary" id="turnSpeedValue">0.5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center p-4 bg-light rounded">
+                                <h6>Visual Keyboard Layout</h6>
+                                <div class="mt-3">
+                                    <div class="mb-2">
+                                        <kbd class="key-display" id="key-q">Q</kbd>
+                                        <kbd class="key-display" id="key-w">W</kbd>
+                                        <kbd class="key-display" id="key-e">E</kbd>
+                                    </div>
+                                    <div class="mb-2">
+                                        <kbd class="key-display" id="key-a">A</kbd>
+                                        <kbd class="key-display" id="key-s">S</kbd>
+                                        <kbd class="key-display" id="key-d">D</kbd>
+                                    </div>
+                                    <div>
+                                        <kbd class="key-display key-wide" id="key-space">SPACE (STOP)</kbd>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted">Active keys will highlight</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command History -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Command History</h5>
+                </div>
+                <div class="card-body">
+                    <div id="commandHistory" class="command-history" style="max-height: 300px; overflow-y: auto;">
+                        <p class="text-muted">No commands sent yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.key-display {
+    display: inline-block;
+    min-width: 60px;
+    padding: 10px 15px;
+    margin: 5px;
+    background-color: #fff;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+
+.key-display.active {
+    background-color: #dc3545;
+    color: white;
+    border-color: #bd2130;
+    transform: scale(1.1);
+}
+
+.key-wide {
+    min-width: 200px;
+}
+
+.command-history {
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.command-entry {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+.command-success {
+    color: #28a745;
+}
+
+.command-error {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/temi-sdk-commands.js') }}"></script>
+<script src="{{ url_for('static', filename='js/system_controls.js') }}"></script>
+<script src="{{ url_for('static', filename='js/commands.js') }}"></script>
+{% endblock %}
