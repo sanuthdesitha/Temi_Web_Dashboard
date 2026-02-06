@@ -1,0 +1,296 @@
+================================================================================
+TEMI ROBOT CONTROL WEBAPP - QUICK START GUIDE
+================================================================================
+
+This package contains a complete, production-ready Temi Robot Control WebApp
+that can be deployed on any Windows or Linux machine.
+
+PROJECT OVERVIEW
+================================================================================
+
+The Temi Robot Control WebApp provides:
+- Web-based control interface for Temi robots
+- MQTT command communication with Temi SDK
+- Automated patrol workflow with waypoints
+- YOLO vision-based violation detection
+- Real-time monitoring and alerts
+- Map management and route planning
+- Volume and system controls
+
+PACKAGE STRUCTURE
+================================================================================
+
+Temi-Control-App-Production/
+├── QUICK_START.txt              <- This file
+├── README_WINDOWS.txt           <- Windows-specific instructions
+├── README_LINUX.txt             <- Linux-specific instructions
+├── requirements.txt             <- Python dependencies
+├── windows/
+│   ├── SETUP.bat               <- Windows setup script
+│   ├── RUN.bat                 <- Windows run script
+│   └── app/                    <- Application directory
+│       ├── app.py              <- Main Flask application
+│       ├── database.py         <- Database management
+│       ├── mqtt_manager.py     <- MQTT client
+│       ├── patrol_manager.py   <- Patrol execution logic
+│       ├── position_tracker.py <- Position tracking
+│       ├── templates/          <- HTML templates
+│       ├── static/             <- CSS, JavaScript, images
+│       └── [other Python modules]
+└── linux/
+    ├── setup.sh                <- Linux setup script
+    ├── run.sh                  <- Linux run script
+    └── app/                    <- Application directory (same structure as Windows)
+
+QUICK START - WINDOWS
+================================================================================
+
+1. EXTRACT FILES
+   - Unzip this package to any directory
+   - Example: C:\Temi-Control-App-Production\
+
+2. RUN SETUP
+   - Double-click: windows\SETUP.bat
+   - This will:
+     * Check Python installation
+     * Create a virtual environment (venv)
+     * Install all dependencies
+     * Initialize the database
+     * Create a default user (admin/admin)
+
+3. RUN APPLICATION
+   - Double-click: windows\RUN.bat
+   - The application will start at: http://localhost:5000
+   - Open your browser and navigate to that URL
+
+4. FIRST TIME SETUP
+   - Login with: admin / admin
+   - Configure robot connections via the Settings page
+   - Add MQTT broker details
+   - Add waypoints and create patrol routes
+
+For detailed Windows instructions, see: README_WINDOWS.txt
+
+QUICK START - LINUX
+================================================================================
+
+1. EXTRACT FILES
+   - Unzip this package to any directory
+   - Example: ~/Temi-Control-App-Production/
+
+2. RUN SETUP
+   - Open terminal and navigate to the extracted folder
+   - Run: ./linux/setup.sh
+   - This will:
+     * Check Python 3 installation
+     * Create a virtual environment
+     * Install all dependencies
+     * Initialize the database
+     * Create a default user
+
+3. RUN APPLICATION
+   - Run: ./linux/run.sh
+   - The application will start at: http://localhost:5000
+   - Open your browser and navigate to that URL
+
+4. FIRST TIME SETUP
+   - Login with: admin / admin
+   - Configure robot connections via the Settings page
+   - Add MQTT broker details
+   - Add waypoints and create patrol routes
+
+For detailed Linux instructions, see: README_LINUX.txt
+
+SYSTEM REQUIREMENTS
+================================================================================
+
+WINDOWS:
+- Windows 7 or later
+- Python 3.8 or later
+- 500 MB free disk space
+- 2 GB RAM minimum
+- Internet connection for pip dependencies
+
+LINUX:
+- Ubuntu 18.04 LTS or later (or compatible distribution)
+- Python 3.8 or later
+- 500 MB free disk space
+- 2 GB RAM minimum
+- Internet connection for pip dependencies
+
+NETWORK REQUIREMENTS
+================================================================================
+
+For the webapp to communicate with Temi robots:
+
+- MQTT Broker: Accessible from the machine running this webapp
+  * Default: localhost:1883 (local)
+  * Can be configured to use HiveMQ Cloud or other brokers
+
+- Temi Robot Network: Same network as the machine running this webapp
+  * Or accessible via configured MQTT broker
+
+- Browser Access: http://localhost:5000 from any computer on the network
+
+CONFIGURATION
+================================================================================
+
+After first run, configure the app via Settings page:
+
+1. MQTT Broker Settings
+   - Host: IP or hostname of MQTT broker
+   - Port: Usually 1883 (default) or 8883 (TLS)
+   - Username/Password: If required by broker
+
+2. Robot Configuration
+   - Add each Temi robot via Settings
+   - Configure robot's MQTT serial number
+   - Set home base location
+
+3. Webview Templates (Optional)
+   - Configure custom webview URLs for robot display screens
+   - Default templates included for common states
+
+4. Patrol Settings
+   - Set YOLO detection sensitivity
+   - Configure violation thresholds
+   - Set default patrol behaviors
+
+DATABASE
+================================================================================
+
+The application uses SQLite database stored at:
+
+WINDOWS:  venv\Lib\site-packages\database.db
+          (Or wherever the app initializes it)
+
+LINUX:    venv/lib/python3.x/site-packages/database.db
+          (Or wherever the app initializes it)
+
+Database is automatically created on first run.
+All robot configurations and patrol history stored in SQLite.
+
+TROUBLESHOOTING
+================================================================================
+
+WINDOWS:
+If SETUP.bat fails:
+  - Check Python is installed: python --version
+  - Run as Administrator if permission issues
+  - See README_WINDOWS.txt for detailed troubleshooting
+
+LINUX:
+If setup.sh fails:
+  - Check Python 3 installed: python3 --version
+  - Check pip3 installed: pip3 --version
+  - Run: chmod +x linux/setup.sh
+  - See README_LINUX.txt for detailed troubleshooting
+
+Cannot connect to Temi robot:
+  - Verify MQTT broker is running and accessible
+  - Check robot and broker are on same network
+  - Verify robot serial number matches configuration
+  - Check firewall allows port 1883 (MQTT)
+
+Browser cannot access http://localhost:5000:
+  - Verify RUN script is still running
+  - Try: http://127.0.0.1:5000
+  - Check firewall allows port 5000
+  - Check console output for error messages
+
+UPGRADING / UPDATING
+================================================================================
+
+To update to a new version:
+
+1. BACKUP: Save your database and settings
+   - Copy the database.db file to safe location
+
+2. STOP: Stop the running application (Ctrl+C)
+
+3. REPLACE: Extract new version over old directory
+   - Or replace files in the app/ subdirectory
+
+4. RERUN SETUP:
+   - Windows: SETUP.bat
+   - Linux: ./setup.sh
+
+5. RESTORE: If prompted about database changes, choose "Update"
+
+6. RESTART: Run the application again
+
+ADVANCED USAGE
+================================================================================
+
+SSH REMOTE ACCESS (LINUX):
+  You can run the app on a Linux server and access from any machine:
+
+  1. Configure Flask to bind to all interfaces (in app.py):
+     app.run(host='0.0.0.0', port=5000)
+
+  2. Access via: http://<server-ip>:5000
+
+DOCKER DEPLOYMENT:
+  For production deployment with Docker, contact support for Dockerfile
+
+PERFORMANCE OPTIMIZATION:
+  - For multiple robots: Increase system RAM
+  - For complex patrol routes: Use SSD disk
+  - For remote access: Ensure adequate network bandwidth
+
+SUPPORT & DOCUMENTATION
+================================================================================
+
+For detailed information:
+- README_WINDOWS.txt  - Windows-specific setup and troubleshooting
+- README_LINUX.txt    - Linux-specific setup and troubleshooting
+- In-app Help         - Available via web interface
+
+SYSTEM FOLDERS (Optional)
+================================================================================
+
+The application creates these folders on first run:
+
+WINDOWS:
+  - venv\              Virtual environment (hidden)
+  - app\database       Database files
+
+LINUX:
+  - venv/              Virtual environment
+  - app/database       Database files
+
+These can be safely backed up and restored.
+
+KEY FEATURES
+================================================================================
+
+Web Dashboard:
+  ✓ Real-time robot status and telemetry
+  ✓ Map-based robot location tracking
+  ✓ Live YOLO violation detection feed
+  ✓ Activity logging and history
+
+Robot Control:
+  ✓ Manual movement (forward, backward, turn)
+  ✓ Waypoint navigation
+  ✓ Volume and audio controls
+  ✓ System restart/shutdown
+  ✓ Custom webview display
+
+Automated Patrol:
+  ✓ Multi-waypoint route planning
+  ✓ Automatic violation detection
+  ✓ Real-time alerts
+  ✓ Patrol execution history
+
+Settings & Configuration:
+  ✓ Robot management
+  ✓ MQTT broker configuration
+  ✓ Webview template management
+  ✓ Alert and notification settings
+  ✓ User account management
+
+================================================================================
+VERSION: 1.0.0 Production Release
+LAST UPDATED: 2026-02-06
+================================================================================

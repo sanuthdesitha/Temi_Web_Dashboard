@@ -1,0 +1,419 @@
+================================================================================
+TWILIO WHATSAPP INTEGRATION SETUP GUIDE
+================================================================================
+
+Complete guide to enable WhatsApp alerts for Temi Robot Control WebApp.
+
+================================================================================
+WHAT YOU GET
+================================================================================
+
+With Twilio WhatsApp integration, the app will send automatic alerts:
+
+✅ Violation Detected Alerts
+   🚨 Sent immediately when YOLO detects a violation
+   Includes: Robot name, location, confidence level, timestamp
+
+✅ Patrol Status Updates
+   🚀 Patrol started / 🧭 Navigating / ✅ Arrived / 🔍 Inspecting
+   🔄 Returning home / 🎉 Patrol completed / ⏹️ Patrol stopped
+
+✅ Robot Alerts
+   🔋 Low battery warning
+   📡 Robot disconnected
+   ⚠️ Error conditions
+   ℹ️ General information
+
+All messages include timestamps and dashboard links for more details.
+
+================================================================================
+STEP 1: CREATE TWILIO ACCOUNT
+================================================================================
+
+1. Go to: https://www.twilio.com/try-twilio
+2. Sign up with email and phone number
+3. Verify your phone number
+4. Accept terms and create account
+5. You'll get a free trial with $20 credit (perfect for testing!)
+
+Your Account is Created ✅
+
+================================================================================
+STEP 2: GET YOUR CREDENTIALS
+================================================================================
+
+1. Go to: https://www.twilio.com/console
+2. Login with your credentials
+3. You'll see on the dashboard:
+
+   ┌─────────────────────────────────────┐
+   │ Account SID: ACxxxxxxxxxxxxxxxx...  │
+   │ Auth Token:  your_auth_token_here   │
+   └─────────────────────────────────────┘
+
+4. Copy both values - you'll need them later
+
+⚠️ IMPORTANT: Keep these secret! Don't share with anyone.
+
+Your Credentials are Copied ✅
+
+================================================================================
+STEP 3: SET UP WHATSAPP SANDBOX
+================================================================================
+
+1. Go to: https://www.twilio.com/console/sms/whatsapp/sandbox
+2. You'll see a WhatsApp Sandbox number like: +1415 123 4567
+3. In your personal WhatsApp app:
+   - Open a new chat
+   - Send the code shown on the page to the sandbox number
+   - Example message to send: "join silver-tennis"
+
+4. Wait for confirmation - you'll get a success message
+
+Your WhatsApp Sandbox is Active ✅
+
+Note: Sandbox expires after 72 hours of inactivity, but reactivates easily.
+
+================================================================================
+STEP 4: CONFIGURE THE APP
+================================================================================
+
+Option A: Using Environment Variables (Recommended)
+
+1. Open or create a .env file in the app directory:
+
+   Windows: d:\...\Temi-Control-App-Production\windows\app\.env
+   Linux:   ~/Temi-Control-App-Production/linux/app/.env
+
+2. Add these lines (replace with YOUR values):
+
+   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxx
+   TWILIO_AUTH_TOKEN=your_auth_token_here
+   TWILIO_WHATSAPP_FROM=whatsapp:+14155555555
+   TWILIO_ALERT_RECIPIENTS=whatsapp:+1234567890,whatsapp:+9876543210
+
+   Where:
+   - ACCOUNT_SID: Copy from Twilio Console
+   - AUTH_TOKEN: Copy from Twilio Console
+   - WHATSAPP_FROM: The sandbox number (e.g., +1415...)
+   - ALERT_RECIPIENTS: Your personal WhatsApp number(s)
+
+3. Save the file
+
+Your App is Configured ✅
+
+Option B: Using config.py (Alternative)
+
+Edit app/config.py and add:
+
+   TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   TWILIO_AUTH_TOKEN = "your_auth_token_here"
+   TWILIO_WHATSAPP_FROM = "whatsapp:+14155555555"
+   TWILIO_ALERT_RECIPIENTS = "+1234567890,+9876543210"
+
+================================================================================
+STEP 5: VERIFY SETUP
+================================================================================
+
+Test the WhatsApp integration:
+
+Python Test Script:
+
+   from twilio_manager import whatsapp_manager
+
+   # Check status
+   status = whatsapp_manager.get_status()
+   print(status)
+
+   # Send test message
+   result = whatsapp_manager.test_message()
+   print(result)
+
+Web Interface Test:
+
+   1. Go to: http://localhost:5000/settings
+   2. Look for "Twilio WhatsApp Status"
+   3. Click "Test WhatsApp Connection"
+   4. You should receive a test message on WhatsApp
+
+Check your WhatsApp app - you should see a test message! ✅
+
+================================================================================
+STEP 6: ENABLE ALERTS IN APP
+================================================================================
+
+The app will automatically send WhatsApp alerts for:
+
+Violations (Automatic):
+- Trigger: YOLO detection (confidence > threshold)
+- Message: 🚨 VIOLATION DETECTED with robot, location, confidence
+- Sent to: All configured recipients
+
+Patrol Status (Optional - Enable in Settings):
+- Trigger: Patrol state changes
+- Messages: 🚀 Started, 🧭 Navigating, ✅ Arrived, etc.
+- Sent to: All configured recipients
+
+Robot Alerts (Optional - Enable in Settings):
+- Trigger: Battery low, disconnect, errors
+- Messages: 🔋 Battery, 📡 Disconnected, etc.
+- Sent to: All configured recipients
+
+Configuration:
+
+1. Go to: http://localhost:5000/settings
+2. Find: "WhatsApp Alert Settings"
+3. Enable:
+   ☑ Violation alerts (recommended)
+   ☑ Patrol status updates (optional)
+   ☑ Robot alerts (optional)
+4. Click Save
+
+Alerts are Now Active ✅
+
+================================================================================
+USAGE EXAMPLES
+================================================================================
+
+In Your Code:
+
+from twilio_manager import whatsapp_manager
+
+# Send violation alert
+whatsapp_manager.send_violation_alert(
+    robot_name="TemiBot1",
+    location="Entrance Hall",
+    confidence=0.95
+)
+
+# Send patrol status
+whatsapp_manager.send_patrol_status(
+    robot_name="TemiBot1",
+    status="navigating",
+    waypoint="Waypoint 3"
+)
+
+# Send robot alert
+whatsapp_manager.send_robot_alert(
+    robot_name="TemiBot1",
+    alert_type="low_battery",
+    description="Battery at 15%"
+)
+
+# Send custom message
+whatsapp_manager.send_alert(
+    message="Custom alert message",
+    robot_name="TemiBot1"
+)
+
+# Test message
+whatsapp_manager.test_message(test_number="+1234567890")
+
+# Get status
+status = whatsapp_manager.get_status()
+print(status)
+
+================================================================================
+PHONE NUMBER FORMAT
+================================================================================
+
+Important: Phone numbers must be in E.164 format:
+
+❌ WRONG:
+   1234567890
+   +1 (234) 567-8900
+   1-234-567-8900
+
+✅ CORRECT:
+   +1234567890
+   +919876543210 (India)
+   +442071234567 (UK)
+   +33123456789 (France)
+
+Format Rules:
+- Start with +
+- Include country code (1 for USA, 91 for India, etc.)
+- No spaces, parentheses, or dashes
+- Only digits after the +
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Problem: "Twilio not enabled" or credentials not found
+
+Solution:
+  1. Check .env file exists in app directory
+  2. Verify all 4 variables are set
+  3. Make sure there are no typos
+  4. Restart the app
+
+Problem: "Failed to send WhatsApp" error
+
+Solution:
+  1. Check Account SID and Auth Token are correct
+  2. Verify WhatsApp Sandbox is active (refresh page)
+  3. Check recipient number is verified in sandbox
+  4. Wait 5 seconds before retrying
+
+Problem: Message sent but not received
+
+Solution:
+  1. Check recipient number is verified in Twilio Console
+  2. Verify number is in E.164 format (+1234567890)
+  3. Check WhatsApp app notifications are enabled
+  4. Test with simple text first
+
+Problem: "No recipients configured"
+
+Solution:
+  1. Check TWILIO_ALERT_RECIPIENTS environment variable
+  2. Verify format: "+1234567890, +9876543210" (comma-separated)
+  3. Add at least one number
+  4. Restart app
+
+Problem: 401 Authentication error
+
+Solution:
+  1. Double-check Account SID
+  2. Verify Auth Token is correct (not expired)
+  3. Regenerate token in Twilio Console if needed
+  4. Update .env with new token
+
+Problem: Twilio sandbox expired
+
+Solution:
+  1. Go to: https://www.twilio.com/console/sms/whatsapp/sandbox
+  2. Re-verify: Send the code to sandbox number
+  3. Sandbox reactivates immediately
+  4. Continue using normally
+
+================================================================================
+COSTS & LIMITS
+================================================================================
+
+Free Trial:
+- $20 credit from Twilio
+- Sufficient for ~100 test messages
+- Perfect for development and testing
+
+Production Rates:
+- Inbound (receiving): ~$0.00
+- Outbound (sending): ~$0.0075 per message
+- Example: 1000 alerts/month = ~$7.50/month
+
+Limits:
+- Sandbox: 1 sender, multiple recipients
+- Production: Multiple senders possible
+- Rate: No strict rate limit for WhatsApp
+
+================================================================================
+ADVANCED: PRODUCTION SETUP
+================================================================================
+
+When Ready to Go to Production:
+
+1. Request WhatsApp Business Account
+   - Go to: https://www.twilio.com/console/sms/whatsapp/onboarding
+   - Follow Twilio's verification process
+   - Approve takes 1-2 weeks
+
+2. Switch from Sandbox
+   - Update TWILIO_WHATSAPP_FROM with production number
+   - Recipients no longer need pre-verification
+   - Send alerts to any WhatsApp number
+
+3. Production Capabilities
+   - Branded messages
+   - Better deliverability
+   - Template-based messages
+   - More recipients
+
+================================================================================
+BEST PRACTICES
+================================================================================
+
+✅ DO:
+
+- Keep credentials in .env file (not in code)
+- Use WhatsApp for critical alerts only
+- Include actionable information in messages
+- Test thoroughly before production
+- Monitor message delivery status
+- Set up alerts for important events
+
+❌ DON'T:
+
+- Share Account SID or Auth Token
+- Hardcode credentials in Python files
+- Send too many messages (avoid flooding)
+- Use for marketing (Twilio prohibits)
+- Store credentials in git/version control
+- Forget to enable notifications in WhatsApp
+
+================================================================================
+SUPPORT & RESOURCES
+================================================================================
+
+Twilio Documentation:
+  https://www.twilio.com/docs/whatsapp
+
+Twilio Console:
+  https://www.twilio.com/console
+
+WhatsApp Business Information:
+  https://www.twilio.com/whatsapp
+
+Common Issues:
+  https://support.twilio.com
+
+Testing Tool:
+  Postman collection available from Twilio
+
+Questions?
+- Check Twilio documentation first
+- Review .env configuration
+- Test with simple messages
+- Check browser console for JavaScript errors
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+File Locations:
+
+Windows:
+  Config: d:\...\windows\app\.env
+  Code: d:\...\windows\app\twilio_manager.py
+
+Linux:
+  Config: ~/Temi-Control-App-Production/linux/app/.env
+  Code: ~/Temi-Control-App-Production/linux/app/twilio_manager.py
+
+Environment Variables:
+
+  TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxx
+  TWILIO_AUTH_TOKEN=your_auth_token
+  TWILIO_WHATSAPP_FROM=whatsapp:+14155555555
+  TWILIO_ALERT_RECIPIENTS=+1234567890, +9876543210
+
+Alert Types:
+
+  Violation: 🚨 violation_detected()
+  Patrol:    🚀 patrol_started(), ✅ patrol_arrived()
+  Robot:     🔋 low_battery(), 📡 disconnected()
+  Custom:    💬 send_alert()
+
+Testing:
+
+  Python: whatsapp_manager.test_message()
+  Web:    Settings → Test WhatsApp Connection
+
+Status Check:
+
+  whatsapp_manager.get_status()
+
+================================================================================
+VERSION: 1.0
+LAST UPDATED: 2026-02-06
+================================================================================

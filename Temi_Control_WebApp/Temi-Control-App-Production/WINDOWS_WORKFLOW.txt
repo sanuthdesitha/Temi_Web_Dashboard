@@ -1,0 +1,600 @@
+================================================================================
+WINDOWS DEPLOYMENT WORKFLOW - STEP BY STEP
+================================================================================
+
+This document shows exactly what happens when you run the Windows setup and
+launch scripts.
+
+================================================================================
+STEP 1: EXTRACT PACKAGE
+================================================================================
+
+Action:
+  • Unzip Temi-Control-App-Production.zip
+  • Extract to desired location (e.g., C:\Temi-Control-App-Production\)
+
+Result:
+  ✓ Folder structure created
+  ✓ All files in place
+  ✓ Ready for setup
+
+Folder Created:
+  C:\Temi-Control-App-Production\
+  ├── windows\
+  │   ├── SETUP.bat
+  │   ├── RUN.bat
+  │   └── app\
+  │       ├── app.py
+  │       ├── database.py
+  │       ├── [other .py files]
+  │       ├── templates\
+  │       └── static\
+  └── [documentation files]
+
+================================================================================
+STEP 2: RUN SETUP.BAT
+================================================================================
+
+Double-click: windows\SETUP.bat
+
+What Happens:
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ============================================================================
+│  Temi Robot Control WebApp - Windows Setup
+│ ============================================================================
+│
+│ [1/5] Checking Python installation...
+│ Python 3.10.5 (main, Aug 17 2023, 12:34:56)
+│ Python found!
+│
+│ [2/5] Creating Python virtual environment...
+│ Creating venv folder for isolated Python environment
+│ Virtual environment created successfully
+│
+│ [3/5] Activating virtual environment...
+│ (venv) C:\Temi-Control-App-Production\windows>
+│ Virtual environment activated
+│
+│ [4/5] Installing Python dependencies...
+│ Installing: Flask, Flask-SocketIO, paho-mqtt, requests, etc.
+│ Successfully installed 13 packages
+│ Dependencies installed successfully
+│
+│ [5/5] Initializing database...
+│ Creating SQLite database
+│ Creating database tables
+│ Creating default admin user (admin/admin)
+│ Database initialization complete
+│
+│ ============================================================================
+│ Setup Complete!
+│ ============================================================================
+│
+│ Next steps:
+│   1. Configure settings in app/config.py if needed
+│   2. Run: run.bat
+│
+│ The application will start at http://localhost:5000
+│
+│ Press any key to continue...
+└─────────────────────────────────────────────────────────────────────────┘
+
+Time Taken: 2-5 minutes (depends on internet speed)
+
+Files Created During Setup:
+  • windows/venv/               Virtual environment (50-100 MB)
+  • windows/app/database.db     SQLite database (~1 MB)
+  • windows/app/__pycache__/    Python cache
+  • windows/app/templates/__pycache__/
+
+What venv Contains:
+  • Python executable
+  • Installed packages (Flask, MQTT client, OpenCV, etc.)
+  • Local pip installation
+  • Completely isolated from system Python
+
+Database Created:
+  • SQLite 3 database
+  • Tables: robots, routes, waypoints, patrols, violations, users, settings
+  • Default admin user: admin/admin
+  • No external database server needed
+
+================================================================================
+STEP 3: RUN RUN.BAT
+================================================================================
+
+Double-click: windows\RUN.bat
+
+What Happens:
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ============================================================================
+│  Temi Robot Control WebApp - Starting Application
+│ ============================================================================
+│
+│ Activating virtual environment...
+│ Virtual environment activated
+│
+│ Starting Temi Robot Control WebApp...
+│
+│ ============================================================================
+│ Application is running at: http://localhost:5000
+│ ============================================================================
+│
+│ Press Ctrl+C to stop the application
+│
+│  * Running on http://127.0.0.1:5000
+│  * Press CTRL+C to quit
+│  * Restarting with reloader
+│  * Debugger is active!
+│  * Debugger PIN: 123-456-789
+│
+│ [2026-02-06 12:00:00] INFO: Server started successfully
+│ [2026-02-06 12:00:01] INFO: Database initialized
+│ [2026-02-06 12:00:02] INFO: MQTT client ready
+└─────────────────────────────────────────────────────────────────────────┘
+
+Time Taken: 5-10 seconds (from double-click to "Running on http://...")
+
+Command Window Behavior:
+  • Stays open during app execution
+  • Shows real-time application logs
+  • Shows any errors or warnings
+  • Pressing Ctrl+C stops the app gracefully
+
+Application Status Indicators:
+  • "Running on http://127.0.0.1:5000" = App started successfully
+  • "Debugger is active" = Development server with hot-reload
+  • No error messages = Ready to use
+
+================================================================================
+STEP 4: OPEN WEB BROWSER
+================================================================================
+
+While RUN.bat is running:
+  1. Open your web browser (Chrome, Firefox, Edge, etc.)
+  2. Navigate to: http://localhost:5000
+  3. Press Enter
+
+What You See:
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  Temi Robot Control WebApp                                    [Menu] │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Username: [___________________________]                             │
+│  Password: [___________________________]                             │
+│                                                                      │
+│                    [  LOGIN  ]                                       │
+│                                                                      │
+│  Tip: Default credentials are admin / admin                          │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+Browser Access:
+  • http://localhost:5000      (from the same computer)
+  • http://127.0.0.1:5000      (alternative local address)
+  • http://<your-ip>:5000      (from another computer on network)
+
+================================================================================
+STEP 5: LOGIN
+================================================================================
+
+Default Credentials:
+  Username: admin
+  Password: admin
+
+After Login:
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  Dashboard                                    Settings | Logout      │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Robot Status                                                        │
+│  ═══════════════════════════════════════════════════════════════   │
+│  No robots configured yet                                           │
+│                                                                      │
+│  Activity Log                                                        │
+│  ═══════════════════════════════════════════════════════════════   │
+│  [2026-02-06 12:00:30] User 'admin' logged in                       │
+│                                                                      │
+│  Recommended Next Steps:                                            │
+│  1. Click "Settings" → Configure MQTT Broker                        │
+│  2. Click "Settings" → Add First Robot                              │
+│  3. Go to "Map Management" → Create Waypoints                       │
+│  4. Go to "Routes" → Build a Patrol Route                           │
+│  5. Go to "Patrol Control" → Start First Patrol                     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+Dashboard Features Available:
+  • Real-time robot status (once robots are configured)
+  • Activity log
+  • Navigation menu
+  • Settings access
+
+================================================================================
+STEP 6: INITIAL CONFIGURATION
+================================================================================
+
+Configure MQTT (Required):
+  1. Click "Settings" in navigation menu
+  2. Find "MQTT Broker Configuration"
+  3. Enter:
+     - Host: localhost (or your MQTT broker IP)
+     - Port: 1883 (default)
+     - Username/Password: (if required)
+  4. Click "Test Connection"
+  5. Save
+
+Add First Robot:
+  1. Still in Settings
+  2. Find "Robot Management"
+  3. Click "Add Robot"
+  4. Enter:
+     - Name: "TestRobot"
+     - Serial: (robot's MQTT serial)
+     - Home Base: "home"
+  5. Save
+
+Create Waypoints:
+  1. Go to "Map Management"
+  2. Click "Add Waypoint"
+  3. Enter name and coordinates
+  4. Save
+  5. Repeat for multiple waypoints
+
+Build Route:
+  1. Go to "Routes"
+  2. Click "New Route"
+  3. Select waypoints in order
+  4. Name the route
+  5. Save
+
+Start Patrol:
+  1. Go to "Patrol Control"
+  2. Select route
+  3. Click "Start Patrol"
+  4. Monitor real-time status
+
+================================================================================
+APPLICATION STARTUP SEQUENCE
+================================================================================
+
+When app.py starts:
+
+1. Flask Server Initializes (0.5 sec)
+   ✓ Load configuration
+   ✓ Set up routes
+   ✓ Initialize extensions
+
+2. Database Connection (0.5 sec)
+   ✓ Connect to database.db
+   ✓ Verify table structure
+   ✓ Load application settings
+
+3. MQTT Client Initializes (1 sec)
+   ✓ Load MQTT configuration
+   ✓ Prepare connection parameters
+   ✓ Setup callbacks
+
+4. Additional Services (2-3 sec)
+   ✓ Initialize Socket.IO
+   ✓ Load webview templates
+   ✓ Setup alert manager
+   ✓ Initialize position tracker
+
+5. Server Ready (5-10 sec total)
+   ✓ WebSocket server listening
+   ✓ HTTP routes ready
+   ✓ Database queries available
+   ✓ Display: "Running on http://127.0.0.1:5000"
+
+Application Ready:
+  ✓ All services initialized
+  ✓ Database accessible
+  ✓ Web interface responsive
+  ✓ Ready for incoming connections
+
+================================================================================
+WHAT THE SETUP.BAT SCRIPT DOES IN DETAIL
+================================================================================
+
+Step 1: Python Check
+─────────────────────
+  Command: python --version
+  Purpose: Verify Python 3.8+ is installed
+  Error Handling: If not found, displays installation instructions
+  Result: Shows Python version or error message
+
+Step 2: Virtual Environment
+──────────────────────────
+  Command: python -m venv venv
+  Purpose: Create isolated Python environment
+  Location: windows/venv/ (about 100 MB)
+  Contents:
+    • Python executable
+    • pip installer
+    • Site-packages directory
+    • Activation scripts
+  Benefit: Isolates app dependencies from system Python
+
+Step 3: Activation
+──────────────────
+  Command: call venv\Scripts\activate.bat
+  Purpose: Activate virtual environment for current session
+  Effect: All subsequent pip and python commands use venv
+  Indicator: Prompt changes to show (venv) prefix
+
+Step 4: Dependencies
+──────────────────────
+  Command: pip install -r requirements.txt
+  Packages Installed:
+    • Flask 2.3.3 (web framework)
+    • Flask-SocketIO 5.3.4 (real-time updates)
+    • paho-mqtt 1.6.1 (MQTT client)
+    • requests 2.31.0 (HTTP client)
+    • numpy 1.24.3 (numerical computing)
+    • opencv-python 4.8.1.78 (YOLO)
+    • [And 7 more packages]
+  Time: 1-3 minutes (depends on internet)
+  Size: ~50 MB installed
+
+Step 5: Database
+───────────────
+  Command: python database.py --init
+  Purpose: Initialize SQLite database
+  Creates:
+    • database.db file (1 MB)
+    • All tables with schema
+    • Default admin account
+  Database Tables:
+    • robots - Robot configuration
+    • routes - Patrol routes
+    • waypoints - Navigation points
+    • patrols - Patrol execution records
+    • violations - Detection results
+    • users - User accounts
+    • activity_logs - Audit trail
+    • settings - System configuration
+
+Complete!
+──────────
+  Script displays success message
+  Ready for: run.bat
+
+================================================================================
+WHAT THE RUN.BAT SCRIPT DOES
+================================================================================
+
+Step 1: Environment Check
+──────────────────────
+  Checks: venv folder exists
+  If Missing: Displays error, tells user to run SETUP.bat first
+  If Found: Proceeds to activation
+
+Step 2: Activate Environment
+────────────────────────────
+  Command: call venv\Scripts\activate.bat
+  Effect: Python/pip commands use virtual environment
+  Prompt Changes: To show (venv) prefix
+
+Step 3: Start Application
+─────────────────────────
+  Command: cd app && python app.py
+  Flask Server Starts:
+    • Loads configuration from config.py
+    • Initializes database connection
+    • Sets up MQTT client
+    • Registers all routes
+    • Enables Socket.IO
+    • Starts development server on port 5000
+
+  Output Shows:
+    • "Running on http://127.0.0.1:5000"
+    • Debugger information
+    • Server ready message
+
+Step 4: Keep Running
+─────────────────────
+  Server Continues Running:
+    • Accepts HTTP requests on port 5000
+    • Handles WebSocket connections
+    • Manages database queries
+    • Executes MQTT commands
+    • Logs all activity
+
+Step 5: Stop Application
+────────────────────────
+  User Action: Press Ctrl+C in command window
+  Result:
+    • Flask server shuts down gracefully
+    • All connections closed
+    • Database connection closed
+    • Return to command prompt
+
+  Window Can Be Closed:
+    • Application has stopped
+    • Data is saved
+    • Database remains intact
+
+================================================================================
+EXPECTED OUTPUT EXAMPLES
+================================================================================
+
+SETUP.BAT - SUCCESS Output:
+
+  ============================================================================
+   Temi Robot Control WebApp - Windows Setup
+  ============================================================================
+
+  [1/5] Checking Python installation...
+  Python 3.10.5 (main, Aug 17 2023, 12:34:56) [MSC v.1916 64 bit (AMD64)]
+  Python found!
+
+  [2/5] Creating Python virtual environment...
+  Virtual environment created successfully
+
+  [3/5] Activating virtual environment...
+  Virtual environment activated
+
+  [4/5] Installing Python dependencies...
+  Collecting Flask==2.3.3
+  Downloading Flask-2.3.3-py3-none-any.whl
+  Installing collected packages: Flask, Flask-SocketIO, ...
+  Successfully installed 13 packages
+
+  [5/5] Initializing database...
+  Database initialization complete
+
+  ============================================================================
+  Setup Complete!
+  ============================================================================
+
+RUN.BAT - SUCCESS Output:
+
+  ============================================================================
+   Temi Robot Control WebApp - Starting Application
+  ============================================================================
+
+  Activating virtual environment...
+  Virtual environment activated
+
+  Starting Temi Robot Control WebApp...
+
+  ============================================================================
+  Application is running at: http://localhost:5000
+  ============================================================================
+
+  Press Ctrl+C to stop the application
+
+   * Running on http://127.0.0.1:5000
+   * Press CTRL+C to quit
+   * Restarting with reloader
+   * Debugger is active!
+   * Debugger PIN: 123-456-789
+
+================================================================================
+TROUBLESHOOTING COMMON ISSUES
+================================================================================
+
+SETUP.BAT Issues:
+
+1. "Python is not recognized"
+   ✗ Problem: Python not installed or not in PATH
+   ✓ Solution: Install Python 3.8+ with "Add to PATH" option checked
+
+2. "Failed to create virtual environment"
+   ✗ Problem: Disk space, permissions, or Python installation issue
+   ✓ Solution: Delete venv folder, check disk space, reinstall Python
+
+3. "Failed to install dependencies"
+   ✗ Problem: Internet connection issue or package unavailable
+   ✓ Solution: Check internet, try again, or check pip version
+
+4. "Database initialization had issues"
+   ✗ Problem: File permissions or corruption
+   ✓ Solution: Delete database.db, rerun SETUP.bat
+
+RUN.BAT Issues:
+
+1. "Virtual environment not found"
+   ✗ Problem: SETUP.bat wasn't run first
+   ✓ Solution: Run SETUP.bat before RUN.bat
+
+2. "Port 5000 already in use"
+   ✗ Problem: Another application using port 5000
+   ✓ Solution:
+     • Stop the other application
+     • Or change port in app.py
+     • Or wait a minute and try again
+
+3. "Application failed to start"
+   ✗ Problem: Configuration error or missing dependency
+   ✓ Solution: Check error messages, see README_WINDOWS.txt
+
+Browser Issues:
+
+1. "Cannot connect to http://localhost:5000"
+   ✗ Problem: App not running or firewall blocking
+   ✓ Solution: Verify RUN.bat window shows "Running on..."
+
+2. "Page not loading, just spinning"
+   ✗ Problem: MQTT broker not configured
+   ✓ Solution: Configure MQTT in Settings page
+
+3. "Robots not showing"
+   ✗ Problem: No robots added yet
+   ✓ Solution: Go to Settings → Add Robot
+
+================================================================================
+NEXT STEPS AFTER SUCCESSFUL LAUNCH
+================================================================================
+
+After seeing "Running on http://127.0.0.1:5000":
+
+1. Configure MQTT Broker (5 minutes)
+   • Go to Settings
+   • Enter MQTT broker IP and port
+   • Test connection
+
+2. Add First Robot (5 minutes)
+   • Settings → Robot Management
+   • Click Add Robot
+   • Enter robot serial and details
+
+3. Create Waypoints (10 minutes)
+   • Map Management
+   • Add multiple waypoints
+   • Save locations
+
+4. Build Route (5 minutes)
+   • Routes page
+   • New Route
+   • Select waypoints in order
+
+5. Start First Patrol (5 minutes)
+   • Patrol Control
+   • Select route
+   • Click Start
+
+6. Monitor in Dashboard (ongoing)
+   • Watch real-time updates
+   • Check activity logs
+   • Monitor violations
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+✓ Port 5000
+  The app uses port 5000 by default
+  If another app uses this port:
+    • Stop the other application, OR
+    • Edit app.py and change port number, OR
+    • Wait a moment and try again
+
+✓ Firewall
+  Windows Firewall may prompt on first run
+  Click "Allow" to permit access
+
+✓ Database
+  SQLite database file: windows/app/database.db
+  Back up this file regularly
+  All data is stored here
+
+✓ Virtual Environment
+  Keep venv folder - it contains all dependencies
+  Don't move or rename venv folder
+  venv is safe to delete and recreate (just rerun SETUP.bat)
+
+✓ Python Version
+  Requires Python 3.8 or later
+  Python 3.10+ recommended
+  Check with: python --version
+
+================================================================================
+This document shows the complete Windows deployment workflow.
+See README_WINDOWS.txt for detailed troubleshooting.
+================================================================================

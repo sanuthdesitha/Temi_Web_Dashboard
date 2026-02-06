@@ -1,0 +1,439 @@
+================================================================================
+TEMI ROBOT CONTROL WEBAPP - PRODUCTION DEPLOYMENT CHECKLIST
+================================================================================
+
+This document provides a comprehensive checklist for deploying the Temi Robot
+Control WebApp in production environments.
+
+PRE-DEPLOYMENT VERIFICATION
+================================================================================
+
+Package Completeness:
+  ☐ requirements.txt exists and contains all dependencies
+  ☐ windows/SETUP.bat created and ready
+  ☐ windows/RUN.bat created and ready
+  ☐ linux/setup.sh created and executable (chmod +x)
+  ☐ linux/run.sh created and executable (chmod +x)
+  ☐ windows/app/ contains all Python files (11 files)
+  ☐ linux/app/ contains all Python files (11 files)
+  ☐ templates/ directory present in both platforms
+  ☐ static/ directory present with CSS, JS, images
+  ☐ webview templates included (9 HTML files)
+  ☐ Documentation files present:
+    - QUICK_START.txt
+    - README_WINDOWS.txt
+    - README_LINUX.txt
+    - .env.example
+
+Python Files Included:
+  ☐ app.py (main Flask application)
+  ☐ database.py (SQLite database layer)
+  ☐ mqtt_manager.py (MQTT client)
+  ☐ patrol_manager.py (patrol automation)
+  ☐ position_tracker.py (robot tracking)
+  ☐ api_extensions.py (API routes)
+  ☐ webview_api.py (webview template API)
+  ☐ cloud_mqtt_monitor.py (cloud connectivity)
+  ☐ alert_manager.py (alerts/notifications)
+  ☐ config.py (configuration management)
+  ☐ violation_debouncer.py (false positive reduction)
+
+Web Assets Included:
+  ☐ HTML templates for all pages (15+ templates)
+  ☐ CSS stylesheets (style.css)
+  ☐ JavaScript for dashboard functionality (15+ files)
+  ☐ Images and assets (4+ images)
+  ☐ Webview templates for Temi screens (9 HTML files)
+
+WINDOWS DEPLOYMENT VERIFICATION
+================================================================================
+
+Environment Setup:
+  ☐ Python 3.8+ installed
+  ☐ Python added to PATH (test: python --version in cmd)
+  ☐ pip3 working (test: pip --version in cmd)
+
+Package Extraction:
+  ☐ Package extracted to target location
+  ☐ Directory structure intact
+  ☐ No permission errors
+  ☐ All files readable
+
+Setup Execution:
+  ☐ SETUP.bat executed successfully
+  ☐ Virtual environment created (venv folder visible)
+  ☐ Dependencies installed (all packages in requirements.txt)
+  ☐ Database initialized
+  ☐ Default admin user created (admin/admin)
+  ☐ No error messages in console
+
+Application Launch:
+  ☐ RUN.bat executes without errors
+  ☐ Flask server starts: "Running on http://127.0.0.1:5000"
+  ☐ Web browser accessible at http://localhost:5000
+  ☐ Login page displays correctly
+  ☐ Can login with admin/admin
+  ☐ Dashboard loads successfully
+  ☐ All navigation items visible
+
+LINUX DEPLOYMENT VERIFICATION
+================================================================================
+
+Environment Setup:
+  ☐ Python 3.8+ installed (python3 --version)
+  ☐ pip3 installed (pip3 --version)
+  ☐ venv module available (python3 -m venv --help)
+  ☐ Required system packages (build-essential, python3-dev if needed)
+
+Package Extraction:
+  ☐ Package extracted to target location
+  ☐ Directory structure intact
+  ☐ File permissions correct
+  ☐ Scripts executable: chmod +x linux/setup.sh linux/run.sh
+
+Setup Execution:
+  ☐ setup.sh executed: ./linux/setup.sh
+  ☐ Virtual environment created
+  ☐ All dependencies installed
+  ☐ Database initialized successfully
+  ☐ Default admin user created
+  ☐ No errors in output
+
+Application Launch:
+  ☐ run.sh executes: ./linux/run.sh
+  ☐ Virtual environment activated
+  ☐ Flask server starts on port 5000
+  ☐ Web browser accessible at http://localhost:5000
+  ☐ Login page displays correctly
+  ☐ Can login with admin/admin
+  ☐ Dashboard loads successfully
+
+NETWORK AND CONNECTIVITY VERIFICATION
+================================================================================
+
+Local Access:
+  ☐ http://localhost:5000 works
+  ☐ http://127.0.0.1:5000 works
+  ☐ Browser shows no SSL/certificate warnings
+
+Remote Access (if deploying on network):
+  ☐ Find server IP address (ipconfig on Windows, ip addr on Linux)
+  ☐ Access from another computer: http://<server-ip>:5000
+  ☐ Works from multiple browsers
+  ☐ Works from multiple devices on network
+  ☐ Firewall configured to allow port 5000
+
+MQTT Connectivity Verification
+================================================================================
+
+Local MQTT Broker:
+  ☐ If using local broker, verify it's running
+  ☐ Test connectivity: mosquitto_sub -h localhost -t # (or equivalent)
+  ☐ Configure in Settings: MQTT Host = localhost, Port = 1883
+
+Remote/Cloud MQTT Broker:
+  ☐ Broker address accessible from deployment machine
+  ☐ Port accessible (usually 1883 or 8883 for TLS)
+  ☐ Firewall allows outbound connection to MQTT port
+  ☐ Configure in Settings with broker details
+
+MQTT Broker Test:
+  ☐ Go to Settings page
+  ☐ Enter MQTT broker details
+  ☐ Test connection button returns success
+  ☐ No connection timeout errors
+
+ROBOT CONFIGURATION VERIFICATION
+================================================================================
+
+Add Test Robot:
+  ☐ Go to Settings → Robot Management
+  ☐ Add test robot with:
+    - Name: "TestRobot" (or actual robot name)
+    - Serial: Actual robot MQTT serial number
+    - Home Base: "home" or actual home waypoint name
+  ☐ Click Save
+  ☐ Robot appears in robot list
+  ☐ Can select robot in dashboard
+
+Robot Status:
+  ☐ Select robot in dropdown
+  ☐ Request battery status (if robot is running and connected)
+  ☐ Status updates in real-time
+  ☐ No timeout errors
+
+Waypoints Configuration:
+  ☐ Add at least 3 test waypoints in Map Management
+  ☐ Each waypoint has unique name and coordinates
+  ☐ Can save and retrieve waypoints
+  ☐ Database persists waypoints across restarts
+
+FEATURE VERIFICATION
+================================================================================
+
+Dashboard:
+  ☐ Real-time robot status displayed
+  ☐ Battery indicator shows current level
+  ☐ Last update timestamp visible
+  ☐ Activity log shows recent events
+
+Commands:
+  ☐ Robot selector works
+  ☐ WASD controls present and labeled correctly
+  ☐ Volume controls visible
+  ☐ System controls (restart/shutdown) present
+  ☐ All controls responsive to clicks
+
+Map Management:
+  ☐ Can add new waypoints
+  ☐ Can edit existing waypoints
+  ☐ Can delete waypoints
+  ☐ Can view all waypoints
+
+Routes:
+  ☐ Can create new routes from waypoints
+  ☐ Can add multiple waypoints to single route
+  ☐ Can save and retrieve routes
+  ☐ Route data persists
+
+Patrol Control:
+  ☐ Can select route and start patrol
+  ☐ Patrol state displays correctly
+  ☐ Can monitor patrol progress
+  ☐ Can stop active patrol
+  ☐ Patrol history recorded in database
+
+Settings:
+  ☐ MQTT configuration editable
+  ☐ Robot management works
+  ☐ Webview URL configuration available
+  ☐ Settings save and persist
+
+Logs:
+  ☐ Activity log shows events
+  ☐ Can filter by robot and type
+  ☐ Timestamps accurate
+  ☐ Old logs persist
+
+DATABASE VERIFICATION
+================================================================================
+
+Database Creation:
+  ☐ database.db file created after first setup
+  ☐ Database not corrupted (can connect)
+  ☐ All tables created correctly
+
+Data Persistence:
+  ☐ Add robot → Restart app → Robot still there
+  ☐ Add waypoint → Restart app → Waypoint still there
+  ☐ Change setting → Restart app → Setting preserved
+  ☐ Add activity log → Persists in database
+
+Backup:
+  ☐ Identify database file location
+  ☐ Create backup copy in safe location
+  ☐ Backup file is readable and non-corrupted
+
+SECURITY VERIFICATION
+================================================================================
+
+Login System:
+  ☐ Login page requires credentials
+  ☐ Cannot access dashboard without login
+  ☐ Session timeout works (if configured)
+  ☐ Logout clears session
+
+Default Credentials:
+  ☐ Default admin account exists (admin/admin)
+  ☐ Can change admin password in Settings → Users
+
+User Management:
+  ☐ Can create new user accounts
+  ☐ Can edit user roles/permissions
+  ☐ Can delete user accounts
+  ☐ Password reset functionality works
+
+HTTPS/TLS (Advanced):
+  ☐ If using HTTPS, certificate is valid
+  ☐ No browser warnings about certificates
+  ☐ HTTPS connections work from all clients
+
+FIREWALL CONFIGURATION
+================================================================================
+
+Windows Firewall:
+  ☐ If prompted, allowed application through firewall
+  ☐ Port 5000 is accessible from network
+  ☐ MQTT outbound traffic allowed
+
+Linux Firewall (if using ufw or firewalld):
+  ☐ Port 5000 allowed: sudo ufw allow 5000/tcp
+  ☐ Or: sudo firewall-cmd --permanent --add-port=5000/tcp
+  ☐ Tested access from another machine
+
+PERFORMANCE AND STABILITY
+================================================================================
+
+Initial Load Time:
+  ☐ Dashboard loads within 5 seconds
+  ☐ No timeout errors on page load
+  ☐ All JavaScript functions smoothly
+
+Real-time Updates:
+  ☐ Activity log updates in real-time (if events occurring)
+  ☐ Robot status updates when requested
+  ☐ No lag in WebSocket communication
+
+Memory Usage:
+  ☐ Application memory footprint acceptable
+  ☐ No memory leaks after extended running (8+ hours)
+  ☐ Stable under typical load
+
+Long-Running Stability:
+  ☐ Application runs for 1+ hour without issues
+  ☐ No gradual slowdown
+  ☐ No error accumulation in logs
+
+DOCUMENTATION VERIFICATION
+================================================================================
+
+User Documentation:
+  ☐ QUICK_START.txt present and readable
+  ☐ README_WINDOWS.txt present for Windows users
+  ☐ README_LINUX.txt present for Linux users
+  ☐ Instructions are clear and complete
+  ☐ Troubleshooting sections cover common issues
+
+Technical Documentation:
+  ☐ .env.example shows configuration options
+  ☐ Comments in Python files explain key logic
+  ☐ API endpoints documented
+  ☐ Database schema documented
+
+BACKUP AND RECOVERY VERIFICATION
+================================================================================
+
+Backup Process:
+  ☐ Database backup procedure documented
+  ☐ Can create backup successfully
+  ☐ Backup file is readable
+
+Recovery Process:
+  ☐ Can restore from backup
+  ☐ All data restored correctly
+  ☐ Application runs normally after restore
+
+Version Tracking:
+  ☐ Application version visible (1.0.0)
+  ☐ Release date documented
+  ☐ Changelog available if applicable
+
+DEPLOYMENT SUCCESS CRITERIA
+================================================================================
+
+All of the following must be true:
+
+  ✓ Package extracted and files intact
+  ✓ Setup script runs without errors
+  ✓ Application starts successfully
+  ✓ Web interface accessible and responsive
+  ✓ Default admin login works
+  ✓ Can configure MQTT broker
+  ✓ Can add robots to system
+  ✓ Dashboard displays real-time data
+  ✓ Database persists all data
+  ✓ MQTT communication functional
+  ✓ No error messages in console
+  ✓ Documentation complete and accessible
+  ✓ Backup/restore procedures tested
+
+DEPLOYMENT SIGN-OFF
+================================================================================
+
+Deploying Organization: _______________________________
+
+Date of Deployment: _______________________________
+
+Deployed By: _______________________________
+
+Verified By: _______________________________
+
+Environment:
+  OS: _______________________________
+  Python Version: _______________________________
+  MQTT Broker: _______________________________
+  Server IP: _______________________________
+
+Additional Notes:
+_________________________________________________________________
+_________________________________________________________________
+_________________________________________________________________
+
+DEPLOYMENT STATUS: ☐ APPROVED  ☐ REJECTED  ☐ PENDING REVIEW
+
+Comments:
+_________________________________________________________________
+_________________________________________________________________
+
+NEXT STEPS AFTER DEPLOYMENT
+================================================================================
+
+1. IMMEDIATE (First 24 hours):
+   ☐ Monitor application logs for errors
+   ☐ Test robot connections if available
+   ☐ Verify database backups working
+   ☐ Train users on basic operations
+
+2. SHORT-TERM (First week):
+   ☐ Monitor system stability
+   ☐ Document any issues encountered
+   ☐ Customize settings for production environment
+   ☐ Configure additional users/accounts
+   ☐ Test patrol automation workflows
+
+3. MEDIUM-TERM (First month):
+   ☐ Review performance metrics
+   ☐ Optimize database (if many records)
+   ☐ Set up automated backups
+   ☐ Create user documentation
+   ☐ Plan capacity upgrades if needed
+
+4. ONGOING:
+   ☐ Regular database backups (daily/weekly)
+   ☐ Monitor disk space usage
+   ☐ Keep system updated
+   ☐ Track application logs
+   ☐ Plan upgrades/improvements
+
+SUPPORT CONTACTS
+================================================================================
+
+Technical Support: [Contact information if available]
+Database Admin: [Contact information]
+Network Admin: [Contact information]
+System Owner: [Contact information]
+
+ADDITIONAL RESOURCES
+================================================================================
+
+Configuration Documentation:
+  - See .env.example for all configuration options
+  - Edit .env file to customize behavior
+  - Restart application for config changes to take effect
+
+API Documentation:
+  - Flask endpoints defined in app.py
+  - RESTful API for webviews in webview_api.py
+  - MQTT communication via mqtt_manager.py
+
+Troubleshooting:
+  - See README_WINDOWS.txt or README_LINUX.txt
+  - Check application logs for error messages
+  - Verify network connectivity
+  - Test MQTT broker accessibility
+
+================================================================================
+VERSION: 1.0.0 Production Release
+DEPLOYMENT CHECKLIST VERSION: 1.0
+LAST UPDATED: 2026-02-06
+================================================================================
