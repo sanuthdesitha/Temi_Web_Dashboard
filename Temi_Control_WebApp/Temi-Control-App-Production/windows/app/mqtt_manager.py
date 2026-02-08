@@ -185,26 +185,10 @@ class MQTTRobotClient:
             self.connecting = False
             logger.info(f"Connected to MQTT broker for robot {self.serial_number}")
             
-            # Subscribe to status topics from robot
+            # Subscribe to all status and event topics from robot
             topics = [
-                (f"{self.base_topic}/status/info", 0),
-                (f"{self.base_topic}/status/info/#", 0),
-                (f"{self.base_topic}/status/battery", 0),
-                (f"{self.base_topic}/status/utils/battery", 0),
-                (f"{self.base_topic}/status/location", 0),
-                (f"{self.base_topic}/status/position", 0),  # Position tracking topic
-                (f"{self.base_topic}/status/audio/#", 0),
-                (f"{self.base_topic}/status/ui/#", 0),
-                (f"{self.base_topic}/status/sensor/#", 0),
-                (f"{self.base_topic}/status/settings/#", 0),
-                (f"{self.base_topic}/status/command", 0),
-                (f"{self.base_topic}/status/map/image", 0),
-                (f"{self.base_topic}/status/map/image/meta", 0),
-                (f"{self.base_topic}/status/map/image/chunk", 0),
-                (f"{self.base_topic}/event/waypoint/goto", 0),
-                (f"{self.base_topic}/event/waypoint/arrived", 0),
-                (f"{self.base_topic}/event/user/detection", 0),
-                (f"{self.base_topic}/event/user/interaction", 0),
+                (f"{self.base_topic}/status/#", 0),
+                (f"{self.base_topic}/event/#", 0),
                 # YOLO topics
                 ("nokia/safety/violations/summary", 0),
                 ("nokia/safety/violations/counts", 0),

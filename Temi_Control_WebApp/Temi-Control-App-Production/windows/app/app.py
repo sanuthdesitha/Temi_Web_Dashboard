@@ -3060,9 +3060,7 @@ def api_mqtt_publish():
             logger.info(f"[API] Reconnection result: {connected}")
 
             if not connected:
-                logger.error(f"[API] Failed to connect robot {robot_id}")
-                # Try anyway - the robot might be reconnecting
-                # return jsonify({'success': False, 'error': 'Robot not connected to MQTT'}), 503
+                logger.warning(f"[API] Robot {robot_id} not connected, attempting publish anyway")
 
         # Publish to robot via MQTT
         logger.info(f"[API] Publishing via mqtt_manager.publish_raw({robot_id}, {topic}, {payload})")
@@ -3079,6 +3077,26 @@ def api_mqtt_publish():
 
     except Exception as e:
         logger.error(f"[API] MQTT publish exception: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/verify-admin', methods=['POST'])
+@login_required
+def api_verify_admin():
+    """Verify admin password for protected SDK commands"""
+    try:
+        data = request.json
+        password = data.get('password', '')
+
+        # Check against configured admin password
+        admin_password = os.getenv('ADMIN_DEFAULT_PASSWORD', 'admin')
+
+        if password == admin_password:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Invalid admin password'}), 401
+    except Exception as e:
+        logger.error(f"Admin verification error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

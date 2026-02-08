@@ -8,6 +8,8 @@ class TemiSDKCommands {
         this.serial = robotSerial;
         this.baseUrl = '/api/mqtt/publish';
         this.baseTopic = `temi/${robotSerial}/command`;
+        this.responseTimeout = 10000; // 10 seconds timeout for robot response
+        this._pendingCallbacks = {};  // Track pending response callbacks
     }
 
     /**
@@ -19,9 +21,13 @@ class TemiSDKCommands {
      */
     async send(category, action, payload = {}) {
         const topic = `${this.baseTopic}/${category}/${action}`;
+        const commandKey = `${category}/${action}`;
 
         try {
             console.log(`[TemiSDK] Sending command: ${topic}`, payload);
+
+            // Start response timeout tracking
+            this._startResponseTimeout(commandKey);
 
             const response = await fetch(this.baseUrl, {
                 method: 'POST',
@@ -32,38 +38,85 @@ class TemiSDKCommands {
             console.log(`[TemiSDK] Response status: ${response.status}`);
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                this._clearResponseTimeout(commandKey);
+                const errorBody = await response.json().catch(() => ({}));
+                throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
             }
 
             const result = await response.json();
             console.log(`[TemiSDK] Response result:`, result);
 
             if (!result.success) {
+                this._clearResponseTimeout(commandKey);
                 const error = result.error || 'Unknown error';
                 console.error(`[TemiSDK] Command failed: ${error}`);
                 if (typeof toastr !== 'undefined') {
-                    toastr.error(`Failed to send command: ${error}`);
-                } else {
-                    alert(`Failed to send command: ${error}`);
+                    toastr.error(`Failed: ${error}`);
                 }
             } else {
-                console.log(`[TemiSDK] Command sent successfully: ${category}/${action}`);
+                console.log(`[TemiSDK] Command published: ${commandKey}`);
                 if (typeof toastr !== 'undefined') {
-                    toastr.success(`${category}/${action} sent`);
-                } else {
-                    alert(`Command sent: ${category}/${action}`);
+                    toastr.info(`Command sent: ${commandKey} — waiting for robot response...`);
                 }
             }
 
             return result;
         } catch (error) {
+            this._clearResponseTimeout(commandKey);
             console.error(`[TemiSDK] Error sending command:`, error);
             if (typeof toastr !== 'undefined') {
                 toastr.error(`Error: ${error.message}`);
-            } else {
-                alert(`Error: ${error.message}`);
             }
             throw error;
+        }
+    }
+
+    /**
+     * Start a timeout timer for a command response
+     */
+    _startResponseTimeout(commandKey) {
+        // Clear any existing timeout for this command
+        this._clearResponseTimeout(commandKey);
+
+        this._pendingCallbacks[commandKey] = setTimeout(() => {
+            console.warn(`[TemiSDK] No response for ${commandKey} after ${this.responseTimeout / 1000}s`);
+            if (typeof toastr !== 'undefined') {
+                toastr.warning(`No response from robot for: ${commandKey}`);
+            }
+            // Update the response display
+            const responseEl = document.getElementById('responseDisplay');
+            if (responseEl && responseEl.textContent === 'Waiting for robot response...') {
+                responseEl.textContent = `No response received for: ${commandKey} (timeout after ${this.responseTimeout / 1000}s)`;
+            }
+            delete this._pendingCallbacks[commandKey];
+        }, this.responseTimeout);
+    }
+
+    /**
+     * Clear a pending response timeout (called when response is received)
+     */
+    _clearResponseTimeout(commandKey) {
+        if (this._pendingCallbacks[commandKey]) {
+            clearTimeout(this._pendingCallbacks[commandKey]);
+            delete this._pendingCallbacks[commandKey];
+        }
+    }
+
+    /**
+     * Call this when a robot MQTT response is received to clear the timeout
+     */
+    onResponseReceived(topic) {
+        // Extract category/action from response topic
+        // Response topics: temi/{serial}/status/{category}/{info}
+        const parts = topic.split('/');
+        if (parts.length >= 5) {
+            const category = parts[3]; // status topic category
+            // Try to match against pending commands
+            for (const key of Object.keys(this._pendingCallbacks)) {
+                if (topic.includes(category)) {
+                    this._clearResponseTimeout(key);
+                }
+            }
         }
     }
 

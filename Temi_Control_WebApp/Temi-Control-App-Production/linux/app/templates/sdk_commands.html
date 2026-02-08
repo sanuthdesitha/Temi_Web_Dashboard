@@ -387,7 +387,7 @@
                                 <select class="form-select" id="speedSelect">
                                     <option value="SLOW">Slow</option>
                                     <option value="MEDIUM" selected>Medium</option>
-                                    <option value="HIGH">High</option>
+                                    <option value="FAST">Fast</option>
                                 </select>
                             </div>
                             <button class="btn btn-primary w-100" onclick="setNavigationSpeed()">
@@ -408,6 +408,7 @@
                             <div class="mb-3">
                                 <label for="safetySelect" class="form-label">Safety Level</label>
                                 <select class="form-select" id="safetySelect">
+                                    <option value="LOW">Low</option>
                                     <option value="MEDIUM" selected>Medium</option>
                                     <option value="HIGH">High</option>
                                 </select>
@@ -500,7 +501,7 @@
             <div class="modal-body">
                 <p>This is a protected action. Please enter admin password:</p>
                 <input type="password" id="adminPasswordInput" class="form-control" placeholder="Enter admin password">
-                <small class="text-muted d-block mt-2">Default: admin123</small>
+                <div id="adminPasswordError" class="text-danger mt-2" style="display: none;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -601,21 +602,43 @@ function promptAdminPassword(action) {
     document.getElementById('adminPasswordInput').focus();
 }
 
-// Execute admin command after password verification
-function executeAdminCommand() {
+// Execute admin command after password verification (server-side)
+async function executeAdminCommand() {
     const password = document.getElementById('adminPasswordInput').value;
-    const correctPassword = 'admin123'; // Change this to your actual admin password
+    const errorDiv = document.getElementById('adminPasswordError');
 
-    if (password !== correctPassword) {
-        toastr.error('Invalid admin password');
+    if (!password) {
+        errorDiv.textContent = 'Please enter the admin password';
+        errorDiv.style.display = 'block';
         return;
     }
 
-    // Hide modal
-    bootstrap.Modal.getInstance(document.getElementById('adminPasswordModal')).hide();
+    try {
+        errorDiv.style.display = 'none';
+        const response = await fetch('/api/verify-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
 
-    // Execute the command
-    sendCommand(pendingAdminCommand.category, pendingAdminCommand.action, {});
+        const result = await response.json();
+
+        if (!result.success) {
+            errorDiv.textContent = result.error || 'Invalid admin password';
+            errorDiv.style.display = 'block';
+            toastr.error('Invalid admin password');
+            return;
+        }
+
+        // Password verified - hide modal and execute command
+        bootstrap.Modal.getInstance(document.getElementById('adminPasswordModal')).hide();
+        sendCommand(pendingAdminCommand.category, pendingAdminCommand.action, {});
+    } catch (err) {
+        console.error('Admin verification error:', err);
+        errorDiv.textContent = 'Server error: ' + err.message;
+        errorDiv.style.display = 'block';
+        toastr.error('Failed to verify password');
+    }
 }
 
 // Allow Enter key to execute
@@ -633,6 +656,10 @@ async function sendCommand(category, action, payload) {
     }
 
     try {
+        // Show waiting state
+        const responseEl = document.getElementById('responseDisplay');
+        responseEl.textContent = 'Waiting for robot response...';
+
         const result = await temiCommands.send(category, action, payload);
         updateResponse(result);
     } catch (err) {
@@ -729,7 +756,12 @@ function setupSocketListeners() {
         const topic = data.topic;
         const payload = data.payload;
 
-        console.log('SDK Commands: MQTT message received:', topic);
+        console.log('SDK Commands: MQTT message received:', topic, payload);
+
+        // Clear response timeout for this command
+        if (temiCommands) {
+            temiCommands.onResponseReceived(topic);
+        }
 
         const showResponse = (containerId, message) => {
             const el = document.getElementById(containerId);
