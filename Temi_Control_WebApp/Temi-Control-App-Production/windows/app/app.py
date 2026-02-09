@@ -3479,7 +3479,8 @@ def api_get_waypoint_inspections(session_id):
 @login_required
 def inspection_patrol():
     """Inspection patrol page"""
-    return render_template('inspection_patrol.html')
+    robots = db.get_all_robots()
+    return render_template('inspection_patrol.html', robots=robots)
 
 
 # Register additional API routes

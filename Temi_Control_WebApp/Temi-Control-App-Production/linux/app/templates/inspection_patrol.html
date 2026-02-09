@@ -8,16 +8,16 @@
     <div class="card mb-3">
         <div class="card-header"><h5>Create Inspection Route</h5></div>
         <div class="card-body">
-            <select class="form-select mb-2" id="robotSelect">
+            <select class="form-select mb-2" id="inspection-robot-select">
                 <option value="">Select robot...</option>
                 {% for robot in robots %}
                 <option value="{{ robot.id }}">{{ robot.name }}</option>
                 {% endfor %}
             </select>
-            <button class="btn btn-primary mb-3" id="fetchWaypointsBtn">Fetch Waypoints</button>
-            <div id="waypointList"></div>
-            <input type="text" class="form-control mb-2" id="routeName" placeholder="Route name">
-            <button class="btn btn-success" id="saveRouteBtn">Save Route</button>
+            <button class="btn btn-primary mb-3" id="fetch-waypoints-btn"><i class="bi bi-download"></i> Fetch Waypoints from Robot</button>
+            <div id="waypoint-list"></div>
+            <input type="text" class="form-control mb-2" id="route-name" placeholder="Route name">
+            <button class="btn btn-success" id="save-route-btn"><i class="bi bi-save"></i> Save Route</button>
         </div>
     </div>
 
@@ -27,10 +27,12 @@
             <div class="card mb-3">
                 <div class="card-header"><h5>Start Inspection</h5></div>
                 <div class="card-body">
-                    <select class="form-select mb-2" id="routeSelect"></select>
-                    <button class="btn btn-success btn-lg w-100 mb-2" id="startBtn">Start Inspection</button>
+                    <select class="form-select mb-2" id="inspection-route-select">
+                        <option value="">Select route...</option>
+                    </select>
+                    <button class="btn btn-success btn-lg w-100 mb-2" id="start-inspection-btn"><i class="bi bi-play-fill"></i> Start Inspection</button>
                     <div class="btn-group w-100">
-                        <button class="btn btn-danger" id="stopBtn" disabled>Stop</button>
+                        <button class="btn btn-danger" id="stop-inspection-btn" disabled><i class="bi bi-stop"></i> Stop</button>
                     </div>
                 </div>
             </div>
@@ -39,11 +41,12 @@
             <div class="card mb-3">
                 <div class="card-header"><h5>Status</h5></div>
                 <div class="card-body">
-                    <p>State: <span id="state" class="badge bg-secondary">Idle</span></p>
-                    <p>Pipeline: <span id="pipeline" class="badge bg-secondary">Unknown</span></p>
-                    <p>Waypoint: <span id="waypoint">-</span></p>
+                    <p>State: <span id="state-badge" class="badge bg-secondary">Idle</span></p>
+                    <p>Pipeline: <span id="pipeline-badge" class="badge bg-secondary">Unknown</span></p>
+                    <p>Current Waypoint: <span id="current-waypoint">-</span></p>
                     <p>Progress: <span id="progress">-</span></p>
-                    <p>Violations: <span id="violations" class="badge bg-danger">0</span></p>
+                    <p>Violations: <span id="violations-current" class="badge bg-danger">0</span></p>
+                    <p>People: <span id="people-current" class="badge bg-info">0</span></p>
                 </div>
             </div>
         </div>
@@ -53,10 +56,47 @@
     <div class="card">
         <div class="card-header"><h5>Inspection Sessions</h5></div>
         <div class="card-body">
-            <table class="table">
-                <thead><tr><th>ID</th><th>Route</th><th>Started</th><th>Status</th><th>Violations</th></tr></thead>
-                <tbody id="sessionsTable"></tbody>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Route</th>
+                        <th>Started</th>
+                        <th>Ended</th>
+                        <th>Waypoints</th>
+                        <th>Violations</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="sessions-tbody"></tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inspection Session Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Waypoint</th>
+                            <th>Violations</th>
+                            <th>People</th>
+                            <th>Duration</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="waypoint-details-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
