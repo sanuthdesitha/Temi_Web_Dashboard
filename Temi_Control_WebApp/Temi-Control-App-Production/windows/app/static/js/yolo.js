@@ -286,11 +286,10 @@
         setTimeout(function() { container.style.display = 'none'; }, 5000);
     }
 
-    function sendPipelineCommand(command, displayLabel) {
-        var label = displayLabel || command;
-        // For resume, the actual MQTT command is "start" but the triggering button is pipelinePauseBtn
+    function sendPipelineCommand(command) {
+        // For resume, the triggering button is pipelinePauseBtn (no dedicated resume btn)
         var btn;
-        if (label === 'resume') {
+        if (command === 'resume') {
             btn = document.getElementById('pipelinePauseBtn');
         } else {
             var btnId = 'pipeline' + command.charAt(0).toUpperCase() + command.slice(1) + 'Btn';
@@ -306,8 +305,8 @@
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 if (res.success) {
-                    showPipelineResult('Command "' + label + '" sent successfully via Cloud MQTT', true);
-                    if (command === 'start' || command === 'restart') setPipelineStatusUI('running');
+                    showPipelineResult('Command "' + command + '" sent successfully via Cloud MQTT', true);
+                    if (command === 'start' || command === 'restart' || command === 'resume') setPipelineStatusUI('running');
                     else if (command === 'pause') setPipelineStatusUI('paused');
                     else if (command === 'stop') setPipelineStatusUI('stopped');
                 } else {
@@ -486,8 +485,8 @@
         var pipelinePauseBtn = document.getElementById('pipelinePauseBtn');
         if (pipelinePauseBtn) pipelinePauseBtn.addEventListener('click', function() {
             if (pipelineState === 'paused') {
-                // Currently paused - send "start" to resume, no confirmation needed
-                sendPipelineCommand('start', 'resume');
+                // Currently paused - send "resume" command, no confirmation needed
+                sendPipelineCommand('resume');
             } else {
                 requestPipelineCommand('pause');
             }

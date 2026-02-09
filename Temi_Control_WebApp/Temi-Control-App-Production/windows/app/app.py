@@ -2734,7 +2734,7 @@ def api_yolo_pipeline_control():
         data = request.json
         command = data.get('command', '').lower()
 
-        valid_commands = ['start', 'stop', 'pause', 'restart']
+        valid_commands = ['start', 'stop', 'pause', 'resume', 'restart']
         if command not in valid_commands:
             return jsonify({
                 'success': False,
