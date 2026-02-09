@@ -2721,6 +2721,55 @@ def api_stop_yolo():
     return jsonify({'success': False, 'error': 'Failed to stop YOLO'}), 400
 
 
+@app.route('/api/yolo/pipeline/control', methods=['POST'])
+@login_required
+def api_yolo_pipeline_control():
+    """Send YOLO pipeline control command via cloud MQTT.
+
+    Publishes to nokia/safety/control/command with payload:
+    {"command": "start|stop|pause|restart", "timestamp": "..."}
+    """
+    global cloud_monitor
+    try:
+        data = request.json
+        command = data.get('command', '').lower()
+
+        valid_commands = ['start', 'stop', 'pause', 'restart']
+        if command not in valid_commands:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid command. Must be one of: {", ".join(valid_commands)}'
+            }), 400
+
+        if not cloud_monitor or not cloud_monitor.connected:
+            return jsonify({
+                'success': False,
+                'error': 'Cloud MQTT broker not connected. Check MQTT settings.'
+            }), 503
+
+        payload = {
+            'command': command,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        topic = 'nokia/safety/control/command'
+        success = cloud_monitor.publish(topic, payload)
+
+        if success:
+            logger.info(f"[YOLO Control] Sent '{command}' to {topic}")
+            db.add_activity_log(None, 'info', f"YOLO pipeline command: {command}")
+            return jsonify({'success': True, 'command': command, 'topic': topic})
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to publish MQTT message'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"YOLO pipeline control error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/yolo/violations', methods=['GET'])
 @login_required
 def api_get_yolo_violations():

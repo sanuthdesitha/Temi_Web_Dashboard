@@ -28,7 +28,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <h6>YOLO Monitoring Status</h6>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="yoloEnabledSwitch" checked>
@@ -36,19 +36,58 @@
                                     <span id="yoloStatusText">Disabled</span>
                                 </label>
                             </div>
+                            <span class="badge bg-info mt-2" id="yoloEnabledBadge">YOLO Enabled</span>
                         </div>
-                        <div class="col-md-6 text-md-end">
-                            <span class="badge bg-info" id="yoloEnabledBadge">YOLO Enabled</span>
-                            <div class="d-inline-flex gap-2 ms-2 mt-2 mt-md-0">
-                                <button class="btn btn-sm btn-outline-success" id="yoloStartBtn">
+                        <div class="col-md-8">
+                            <h6>Pipeline Control <small class="text-muted">(via Cloud MQTT)</small></h6>
+                            <div id="pipelineStatus" class="mb-2">
+                                <span class="badge bg-secondary" id="pipelineStatusBadge">Pipeline: Unknown</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-success" id="pipelineStartBtn">
                                     <i class="bi bi-play-circle"></i> Start Pipeline
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" id="yoloStopBtn">
+                                <button class="btn btn-warning" id="pipelinePauseBtn">
+                                    <i class="bi bi-pause-circle"></i> Pause Pipeline
+                                </button>
+                                <button class="btn btn-danger" id="pipelineStopBtn">
                                     <i class="bi bi-stop-circle"></i> Stop Pipeline
                                 </button>
+                                <button class="btn btn-info" id="pipelineRestartBtn">
+                                    <i class="bi bi-arrow-clockwise"></i> Restart Pipeline
+                                </button>
+                            </div>
+                            <div id="pipelineCommandResult" class="mt-2" style="display: none;">
+                                <div class="alert alert-sm py-1 px-2 mb-0" id="pipelineCommandAlert">
+                                    <small id="pipelineCommandMessage"></small>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Confirmation Modal -->
+    <div class="modal fade" id="pipelineConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header" id="pipelineConfirmHeader">
+                    <h5 class="modal-title" id="pipelineConfirmTitle">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="pipelineConfirmMessage">Are you sure?</p>
+                    <div id="pipelinePasswordSection" style="display: none;">
+                        <label class="form-label" for="pipelineAdminPassword">Admin Password</label>
+                        <input type="password" id="pipelineAdminPassword" class="form-control" placeholder="Enter admin password">
+                        <div id="pipelinePasswordError" class="text-danger mt-1" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="pipelineConfirmBtn">Confirm</button>
                 </div>
             </div>
         </div>

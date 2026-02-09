@@ -129,6 +129,25 @@ class CloudMQTTMonitor:
         except Exception as e:
             logger.error(f"Error processing cloud MQTT message: {e}")
 
+    def publish(self, topic, payload, qos=0):
+        """Publish a message to the cloud MQTT broker"""
+        if not self.client or not self.connected:
+            logger.error("Cannot publish - not connected to cloud MQTT broker")
+            return False
+        try:
+            if isinstance(payload, dict):
+                payload = json.dumps(payload)
+            result = self.client.publish(topic, payload, qos=qos)
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.info(f"[CLOUD MQTT] Published to {topic}: {payload}")
+                return True
+            else:
+                logger.error(f"[CLOUD MQTT] Failed to publish to {topic}: rc={result.rc}")
+                return False
+        except Exception as e:
+            logger.error(f"[CLOUD MQTT] Publish error: {e}")
+            return False
+
     def _process_violation(self, topic, payload):
         """Process violation messages"""
         try:

@@ -238,6 +238,191 @@
         if (textarea) textarea.value = defaults.join('\n');
     }
 
+    // ==========================================
+    // Pipeline Control via Cloud MQTT
+    // ==========================================
+
+    let pendingPipelineCommand = null;
+    let pipelineState = 'unknown'; // unknown, running, paused, stopped
+
+    function setPipelineStatusUI(state) {
+        pipelineState = state;
+        const badge = document.getElementById('pipelineStatusBadge');
+        if (!badge) return;
+
+        const stateMap = {
+            'running':  { text: 'Pipeline: Running',  cls: 'bg-success' },
+            'paused':   { text: 'Pipeline: Paused',   cls: 'bg-warning text-dark' },
+            'stopped':  { text: 'Pipeline: Stopped',  cls: 'bg-danger' },
+            'unknown':  { text: 'Pipeline: Unknown',  cls: 'bg-secondary' }
+        };
+
+        const info = stateMap[state] || stateMap['unknown'];
+        badge.textContent = info.text;
+        badge.className = 'badge ' + info.cls;
+    }
+
+    function showPipelineResult(message, isSuccess) {
+        const container = document.getElementById('pipelineCommandResult');
+        const alertEl = document.getElementById('pipelineCommandAlert');
+        const msg = document.getElementById('pipelineCommandMessage');
+        if (!container || !alertEl || !msg) return;
+
+        msg.textContent = message;
+        alertEl.className = 'alert py-1 px-2 mb-0 ' + (isSuccess ? 'alert-success' : 'alert-danger');
+        container.style.display = 'block';
+
+        setTimeout(function() { container.style.display = 'none'; }, 5000);
+    }
+
+    function sendPipelineCommand(command) {
+        const btnId = 'pipeline' + command.charAt(0).toUpperCase() + command.slice(1) + 'Btn';
+        const btn = document.getElementById(btnId);
+        if (btn) btn.disabled = true;
+
+        fetch('/api/yolo/pipeline/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: command })
+        })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    showPipelineResult('Command "' + command + '" sent successfully via Cloud MQTT', true);
+                    if (command === 'start' || command === 'restart') setPipelineStatusUI('running');
+                    else if (command === 'pause') setPipelineStatusUI('paused');
+                    else if (command === 'stop') setPipelineStatusUI('stopped');
+                } else {
+                    showPipelineResult(res.error || 'Failed to send command', false);
+                }
+            })
+            .catch(function(err) {
+                showPipelineResult('Error: ' + err.message, false);
+            })
+            .finally(function() {
+                if (btn) btn.disabled = false;
+            });
+    }
+
+    // Commands that require admin password
+    const protectedCommands = { stop: true, restart: true };
+
+    function requestPipelineCommand(command) {
+        // Start does not need confirmation
+        if (command === 'start') {
+            sendPipelineCommand(command);
+            return;
+        }
+
+        // All other commands need confirmation modal
+        pendingPipelineCommand = command;
+
+        const titleEl = document.getElementById('pipelineConfirmTitle');
+        const msgEl = document.getElementById('pipelineConfirmMessage');
+        const headerEl = document.getElementById('pipelineConfirmHeader');
+        const pwdSection = document.getElementById('pipelinePasswordSection');
+        const pwdInput = document.getElementById('pipelineAdminPassword');
+        const pwdError = document.getElementById('pipelinePasswordError');
+        const confirmBtn = document.getElementById('pipelineConfirmBtn');
+
+        if (pwdInput) pwdInput.value = '';
+        if (pwdError) pwdError.style.display = 'none';
+
+        var commandConfig = {
+            stop: {
+                title: 'Stop YOLO Pipeline',
+                message: 'This will stop the YOLO detection pipeline. The system will not detect violations until restarted.',
+                headerClass: 'bg-danger text-white',
+                btnClass: 'btn-danger',
+                needsPassword: true
+            },
+            pause: {
+                title: 'Pause YOLO Pipeline',
+                message: 'This will pause the YOLO detection pipeline. Detection will be suspended until resumed.',
+                headerClass: 'bg-warning',
+                btnClass: 'btn-warning',
+                needsPassword: false
+            },
+            restart: {
+                title: 'Restart YOLO Pipeline',
+                message: 'This will restart the YOLO detection pipeline. There may be a brief interruption in detection.',
+                headerClass: 'bg-info text-white',
+                btnClass: 'btn-info',
+                needsPassword: true
+            }
+        };
+
+        var cfg = commandConfig[command];
+        if (!cfg) return;
+
+        if (titleEl) titleEl.textContent = cfg.title;
+        if (msgEl) msgEl.textContent = cfg.message;
+        if (headerEl) headerEl.className = 'modal-header ' + cfg.headerClass;
+        if (confirmBtn) confirmBtn.className = 'btn ' + cfg.btnClass;
+        if (pwdSection) pwdSection.style.display = cfg.needsPassword ? 'block' : 'none';
+
+        var modal = new bootstrap.Modal(document.getElementById('pipelineConfirmModal'));
+        modal.show();
+
+        if (cfg.needsPassword && pwdInput) {
+            setTimeout(function() { pwdInput.focus(); }, 300);
+        }
+    }
+
+    function executePipelineConfirm() {
+        if (!pendingPipelineCommand) return;
+
+        var command = pendingPipelineCommand;
+        var needsPassword = protectedCommands[command] || false;
+        var pwdInput = document.getElementById('pipelineAdminPassword');
+        var pwdError = document.getElementById('pipelinePasswordError');
+
+        if (needsPassword) {
+            var password = pwdInput ? pwdInput.value : '';
+            if (!password) {
+                if (pwdError) {
+                    pwdError.textContent = 'Please enter the admin password';
+                    pwdError.style.display = 'block';
+                }
+                return;
+            }
+
+            // Verify password server-side then send command
+            fetch('/api/verify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password })
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success) {
+                        if (pwdError) {
+                            pwdError.textContent = data.error || 'Invalid admin password';
+                            pwdError.style.display = 'block';
+                        }
+                        return;
+                    }
+                    // Password OK - close modal and send command
+                    var modalEl = document.getElementById('pipelineConfirmModal');
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    pendingPipelineCommand = null;
+                    sendPipelineCommand(command);
+                })
+                .catch(function(err) {
+                    if (pwdError) {
+                        pwdError.textContent = 'Failed to verify password';
+                        pwdError.style.display = 'block';
+                    }
+                });
+        } else {
+            // No password needed - just close and send
+            var modalEl = document.getElementById('pipelineConfirmModal');
+            bootstrap.Modal.getInstance(modalEl).hide();
+            pendingPipelineCommand = null;
+            sendPipelineCommand(command);
+        }
+    }
+
     function setupHandlers() {
         if (yoloEnabledSwitch) {
             yoloEnabledSwitch.addEventListener('change', function() {
@@ -273,36 +458,31 @@
             loadStreamUrl();
         });
 
-        const stopBtn = document.getElementById('btn-stop-stream');
-        if (stopBtn) stopBtn.addEventListener('click', stopStream);
+        const stopStreamBtn = document.getElementById('btn-stop-stream');
+        if (stopStreamBtn) stopStreamBtn.addEventListener('click', stopStream);
 
-        const yoloStartBtn = document.getElementById('yoloStartBtn');
-        if (yoloStartBtn) {
-            yoloStartBtn.addEventListener('click', function() {
-                fetch('/api/yolo/start', { method: 'POST' })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            alert('YOLO pipeline started');
-                        } else {
-                            alert(res.error || 'Failed to start YOLO');
-                        }
-                    });
-            });
-        }
+        // Pipeline control buttons (Cloud MQTT)
+        var pipelineStartBtn = document.getElementById('pipelineStartBtn');
+        if (pipelineStartBtn) pipelineStartBtn.addEventListener('click', function() { requestPipelineCommand('start'); });
 
-        const yoloStopBtn = document.getElementById('yoloStopBtn');
-        if (yoloStopBtn) {
-            yoloStopBtn.addEventListener('click', function() {
-                fetch('/api/yolo/stop', { method: 'POST' })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            alert('YOLO pipeline stopped');
-                        } else {
-                            alert(res.error || 'Failed to stop YOLO');
-                        }
-                    });
+        var pipelinePauseBtn = document.getElementById('pipelinePauseBtn');
+        if (pipelinePauseBtn) pipelinePauseBtn.addEventListener('click', function() { requestPipelineCommand('pause'); });
+
+        var pipelineStopBtn = document.getElementById('pipelineStopBtn');
+        if (pipelineStopBtn) pipelineStopBtn.addEventListener('click', function() { requestPipelineCommand('stop'); });
+
+        var pipelineRestartBtn = document.getElementById('pipelineRestartBtn');
+        if (pipelineRestartBtn) pipelineRestartBtn.addEventListener('click', function() { requestPipelineCommand('restart'); });
+
+        // Confirm button in modal
+        var confirmBtn = document.getElementById('pipelineConfirmBtn');
+        if (confirmBtn) confirmBtn.addEventListener('click', executePipelineConfirm);
+
+        // Enter key in password field
+        var pwdInput = document.getElementById('pipelineAdminPassword');
+        if (pwdInput) {
+            pwdInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') executePipelineConfirm();
             });
         }
     }
