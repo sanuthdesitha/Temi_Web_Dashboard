@@ -241,7 +241,72 @@ def init_database():
                 FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
             )
         ''')
-        
+
+        # YOLO Inspection Routes table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS yolo_inspection_routes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                robot_id INTEGER NOT NULL,
+                loop_count INTEGER DEFAULT 1,
+                return_location TEXT,
+                pipeline_start_timeout INTEGER DEFAULT 30,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (robot_id) REFERENCES robots(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # YOLO Inspection Waypoints table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS yolo_inspection_waypoints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                inspection_route_id INTEGER NOT NULL,
+                waypoint_name TEXT NOT NULL,
+                sequence_order INTEGER NOT NULL,
+                checking_duration INTEGER DEFAULT 30,
+                violation_threshold INTEGER DEFAULT 0,
+                tts_start TEXT DEFAULT 'Starting inspection at {waypoint}',
+                tts_no_violation TEXT DEFAULT 'No violations detected at {waypoint}',
+                tts_violation TEXT DEFAULT 'Safety violations detected: {count}',
+                FOREIGN KEY (inspection_route_id) REFERENCES yolo_inspection_routes(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # YOLO Inspection Sessions table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS yolo_inspection_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                robot_id INTEGER NOT NULL,
+                inspection_route_id INTEGER NOT NULL,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ended_at TIMESTAMP,
+                status TEXT DEFAULT 'running',
+                pipeline_start_status TEXT,
+                total_waypoints_inspected INTEGER DEFAULT 0,
+                total_violations_found INTEGER DEFAULT 0,
+                FOREIGN KEY (robot_id) REFERENCES robots(id) ON DELETE CASCADE,
+                FOREIGN KEY (inspection_route_id) REFERENCES yolo_inspection_routes(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # YOLO Waypoint Inspections table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS yolo_waypoint_inspections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                inspection_session_id INTEGER NOT NULL,
+                waypoint_name TEXT NOT NULL,
+                timestamp_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                timestamp_end TIMESTAMP,
+                duration_seconds INTEGER,
+                violations_detected INTEGER DEFAULT 0,
+                people_detected INTEGER DEFAULT 0,
+                compliant_detected INTEGER DEFAULT 0,
+                viewports_json TEXT,
+                result TEXT,
+                FOREIGN KEY (inspection_session_id) REFERENCES yolo_inspection_sessions(id) ON DELETE CASCADE
+            )
+        ''')
+
         conn.commit()
         
         # Create default admin user if not exists
@@ -329,9 +394,16 @@ def init_database():
             'telegram_bot_token': '',
             'telegram_chat_id': '',
             'twilio_whatsapp_from': '',
-            'twilio_whatsapp_to': ''
+            'twilio_whatsapp_to': '',
+            # YOLO Inspection Patrol settings
+            'inspection_patrol_pipeline_timeout': '30',
+            'inspection_checking_duration_default': '30',
+            'inspection_webview_url': 'file:///storage/emulated/0/temiscreens/InspectionStatus.htm',
+            'inspection_tts_start_default': 'Starting inspection at {waypoint}',
+            'inspection_tts_no_violation_default': 'No violations detected at {waypoint}',
+            'inspection_tts_violation_default': 'Safety violations detected: {count}'
         }
-        
+
         for key, value in default_settings.items():
             cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
                          (key, value))
@@ -1345,6 +1417,304 @@ def get_active_patrol_history(robot_id: int) -> Optional[Dict]:
         """, (robot_id,))
         row = cursor.fetchone()
         return dict(row) if row else None
+
+
+# ============================================================================
+# YOLO Inspection Patrol Operations
+# ============================================================================
+
+def create_inspection_route(name: str, robot_id: int, waypoints: List[Dict],
+                            loop_count: int = 1, return_location: Optional[str] = None,
+                            pipeline_timeout: int = 30) -> int:
+    """Create a new YOLO inspection route with waypoints"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Insert route
+        cursor.execute("""
+            INSERT INTO yolo_inspection_routes
+            (name, robot_id, loop_count, return_location, pipeline_start_timeout)
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, robot_id, loop_count, return_location, pipeline_timeout))
+
+        route_id = cursor.lastrowid
+
+        # Insert waypoints
+        for waypoint in waypoints:
+            cursor.execute("""
+                INSERT INTO yolo_inspection_waypoints
+                (inspection_route_id, waypoint_name, sequence_order, checking_duration,
+                 violation_threshold, tts_start, tts_no_violation, tts_violation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                route_id,
+                waypoint.get('waypoint_name'),
+                waypoint.get('sequence_order', 0),
+                waypoint.get('checking_duration', 30),
+                waypoint.get('violation_threshold', 0),
+                waypoint.get('tts_start', 'Starting inspection at {waypoint}'),
+                waypoint.get('tts_no_violation', 'No violations detected at {waypoint}'),
+                waypoint.get('tts_violation', 'Safety violations detected: {count}')
+            ))
+
+        conn.commit()
+        return route_id
+
+
+def get_inspection_routes(robot_id: Optional[int] = None) -> List[Dict]:
+    """Get all YOLO inspection routes"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        if robot_id:
+            cursor.execute("""
+                SELECT ir.*, r.name as robot_name
+                FROM yolo_inspection_routes ir
+                JOIN robots r ON ir.robot_id = r.id
+                WHERE ir.robot_id = ?
+                ORDER BY ir.created_at DESC
+            """, (robot_id,))
+        else:
+            cursor.execute("""
+                SELECT ir.*, r.name as robot_name
+                FROM yolo_inspection_routes ir
+                JOIN robots r ON ir.robot_id = r.id
+                ORDER BY ir.created_at DESC
+            """)
+
+        routes = [dict(row) for row in cursor.fetchall()]
+
+        # Fetch waypoints for each route
+        for route in routes:
+            cursor.execute("""
+                SELECT * FROM yolo_inspection_waypoints
+                WHERE inspection_route_id = ?
+                ORDER BY sequence_order
+            """, (route['id'],))
+            route['waypoints'] = [dict(row) for row in cursor.fetchall()]
+
+        return routes
+
+
+def get_inspection_route(route_id: int) -> Optional[Dict]:
+    """Get a specific YOLO inspection route with waypoints"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT ir.*, r.name as robot_name
+            FROM yolo_inspection_routes ir
+            JOIN robots r ON ir.robot_id = r.id
+            WHERE ir.id = ?
+        """, (route_id,))
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        route = dict(row)
+
+        # Fetch waypoints
+        cursor.execute("""
+            SELECT * FROM yolo_inspection_waypoints
+            WHERE inspection_route_id = ?
+            ORDER BY sequence_order
+        """, (route_id,))
+
+        route['waypoints'] = [dict(row) for row in cursor.fetchall()]
+
+        return route
+
+
+def update_inspection_route(route_id: int, name: Optional[str] = None,
+                            loop_count: Optional[int] = None,
+                            waypoints: Optional[List[Dict]] = None) -> bool:
+    """Update a YOLO inspection route"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            if name:
+                cursor.execute("UPDATE yolo_inspection_routes SET name = ? WHERE id = ?",
+                             (name, route_id))
+
+            if loop_count is not None:
+                cursor.execute("UPDATE yolo_inspection_routes SET loop_count = ? WHERE id = ?",
+                             (loop_count, route_id))
+
+            if waypoints is not None:
+                # Delete existing waypoints
+                cursor.execute("DELETE FROM yolo_inspection_waypoints WHERE inspection_route_id = ?",
+                             (route_id,))
+
+                # Insert new waypoints
+                for waypoint in waypoints:
+                    cursor.execute("""
+                        INSERT INTO yolo_inspection_waypoints
+                        (inspection_route_id, waypoint_name, sequence_order, checking_duration,
+                         violation_threshold, tts_start, tts_no_violation, tts_violation)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        route_id,
+                        waypoint.get('waypoint_name'),
+                        waypoint.get('sequence_order', 0),
+                        waypoint.get('checking_duration', 30),
+                        waypoint.get('violation_threshold', 0),
+                        waypoint.get('tts_start', 'Starting inspection at {waypoint}'),
+                        waypoint.get('tts_no_violation', 'No violations detected at {waypoint}'),
+                        waypoint.get('tts_violation', 'Safety violations detected: {count}')
+                    ))
+
+            conn.commit()
+            return True
+    except Exception:
+        return False
+
+
+def delete_inspection_route(route_id: int) -> bool:
+    """Delete a YOLO inspection route (cascade deletes waypoints)"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM yolo_inspection_routes WHERE id = ?", (route_id,))
+            conn.commit()
+            return True
+    except Exception:
+        return False
+
+
+def create_inspection_session(robot_id: int, route_id: int,
+                              pipeline_status: str = 'unknown') -> int:
+    """Create a new inspection session"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO yolo_inspection_sessions
+            (robot_id, inspection_route_id, pipeline_start_status)
+            VALUES (?, ?, ?)
+        """, (robot_id, route_id, pipeline_status))
+        conn.commit()
+        return cursor.lastrowid
+
+
+def update_inspection_session(session_id: int, status: Optional[str] = None,
+                              waypoints_inspected: Optional[int] = None,
+                              violations_found: Optional[int] = None) -> bool:
+    """Update inspection session"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            updates = []
+            params = []
+
+            if status:
+                updates.append("status = ?")
+                params.append(status)
+                if status in ('completed', 'stopped', 'error'):
+                    updates.append("ended_at = CURRENT_TIMESTAMP")
+
+            if waypoints_inspected is not None:
+                updates.append("total_waypoints_inspected = ?")
+                params.append(waypoints_inspected)
+
+            if violations_found is not None:
+                updates.append("total_violations_found = ?")
+                params.append(violations_found)
+
+            if updates:
+                params.append(session_id)
+                cursor.execute(f"""
+                    UPDATE yolo_inspection_sessions
+                    SET {', '.join(updates)}
+                    WHERE id = ?
+                """, params)
+                conn.commit()
+
+            return True
+    except Exception:
+        return False
+
+
+def create_waypoint_inspection(session_id: int, waypoint_name: str,
+                               violations: int = 0, people: int = 0,
+                               compliant: int = 0, viewports: Optional[Dict] = None,
+                               result: str = 'no_violation',
+                               duration: Optional[int] = None) -> int:
+    """Create a waypoint inspection record"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        viewports_json = json.dumps(viewports) if viewports else None
+
+        cursor.execute("""
+            INSERT INTO yolo_waypoint_inspections
+            (inspection_session_id, waypoint_name, violations_detected,
+             people_detected, compliant_detected, viewports_json, result,
+             timestamp_end, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+        """, (session_id, waypoint_name, violations, people, compliant,
+              viewports_json, result, duration))
+
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_inspection_sessions(robot_id: Optional[int] = None,
+                            limit: int = 50) -> List[Dict]:
+    """Get inspection sessions with route info"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        if robot_id:
+            cursor.execute("""
+                SELECT
+                    s.*,
+                    r.name as route_name,
+                    rob.name as robot_name
+                FROM yolo_inspection_sessions s
+                JOIN yolo_inspection_routes r ON s.inspection_route_id = r.id
+                JOIN robots rob ON s.robot_id = rob.id
+                WHERE s.robot_id = ?
+                ORDER BY s.started_at DESC
+                LIMIT ?
+            """, (robot_id, limit))
+        else:
+            cursor.execute("""
+                SELECT
+                    s.*,
+                    r.name as route_name,
+                    rob.name as robot_name
+                FROM yolo_inspection_sessions s
+                JOIN yolo_inspection_routes r ON s.inspection_route_id = r.id
+                JOIN robots rob ON s.robot_id = rob.id
+                ORDER BY s.started_at DESC
+                LIMIT ?
+            """, (limit,))
+
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def get_waypoint_inspections(session_id: int) -> List[Dict]:
+    """Get all waypoint inspections for a session"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM yolo_waypoint_inspections
+            WHERE inspection_session_id = ?
+            ORDER BY timestamp_start
+        """, (session_id,))
+
+        inspections = [dict(row) for row in cursor.fetchall()]
+
+        # Parse viewports JSON
+        for inspection in inspections:
+            if inspection['viewports_json']:
+                inspection['viewports'] = json.loads(inspection['viewports_json'])
+            else:
+                inspection['viewports'] = {}
+
+        return inspections
 
 
 if __name__ == '__main__':

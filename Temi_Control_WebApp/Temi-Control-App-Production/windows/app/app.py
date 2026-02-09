@@ -3345,6 +3345,143 @@ def api_clear_logs():
     return jsonify({'success': True})
 
 
+# ============================================================================
+# YOLO Inspection Patrol API Endpoints
+# ============================================================================
+
+# Store active inspection patrols
+active_inspection_patrols = {}  # robot_id -> YoloInspectionPatrolManager
+
+
+@app.route('/api/yolo-inspection-routes', methods=['GET'])
+@login_required
+def api_get_inspection_routes():
+    """Get all inspection routes"""
+    robot_id = request.args.get('robot_id', type=int)
+    routes = db.get_inspection_routes(robot_id=robot_id)
+    return jsonify({'success': True, 'routes': routes})
+
+
+@app.route('/api/yolo-inspection-routes', methods=['POST'])
+@login_required
+def api_create_inspection_route():
+    """Create new inspection route"""
+    data = request.json
+    name = data.get('name')
+    robot_id = data.get('robot_id')
+    waypoints = data.get('waypoints', [])
+    loop_count = data.get('loop_count', 1)
+
+    if not name or not robot_id or not waypoints:
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+
+    route_id = db.create_inspection_route(name, robot_id, waypoints, loop_count)
+    return jsonify({'success': True, 'route_id': route_id})
+
+
+@app.route('/api/yolo-inspection-routes/<int:route_id>', methods=['DELETE'])
+@login_required
+def api_delete_inspection_route(route_id):
+    """Delete inspection route"""
+    success = db.delete_inspection_route(route_id)
+    return jsonify({'success': success})
+
+
+@app.route('/api/yolo-inspection-patrols/start', methods=['POST'])
+@login_required
+def api_start_inspection_patrol():
+    """Start YOLO inspection patrol"""
+    from yolo_inspection_manager import YoloInspectionPatrolManager
+
+    data = request.json
+    route_id = data.get('route_id')
+
+    if not route_id:
+        return jsonify({'success': False, 'error': 'route_id required'}), 400
+
+    route = db.get_inspection_route(route_id)
+    if not route:
+        return jsonify({'success': False, 'error': 'Route not found'}), 404
+
+    robot_id = route['robot_id']
+
+    # Get MQTT client
+    mqtt_client = mqtt_manager.get_client(robot_id)
+    if not mqtt_client:
+        return jsonify({'success': False, 'error': 'Robot not connected'}), 503
+
+    # Create manager
+    manager = YoloInspectionPatrolManager(
+        robot_id=robot_id,
+        mqtt_client=mqtt_client,
+        cloud_mqtt=cloud_monitor,
+        inspection_route=route,
+        settings=db.get_all_settings(),
+        yolo_state_provider=lambda: yolo_state,
+        callbacks={
+            'on_status_update': lambda status: emit_socketio('yolo_inspection_status', status),
+            'on_waypoint_result': lambda result: emit_socketio('yolo_inspection_waypoint_result', result),
+            'on_complete': lambda data: emit_socketio('yolo_inspection_complete', data),
+            'on_error': lambda error: emit_socketio('yolo_inspection_error', error)
+        },
+        database=db
+    )
+
+    active_inspection_patrols[robot_id] = manager
+
+    if manager.start():
+        return jsonify({'success': True, 'message': 'Inspection patrol started'})
+    else:
+        del active_inspection_patrols[robot_id]
+        return jsonify({'success': False, 'error': 'Failed to start'}), 500
+
+
+@app.route('/api/yolo-inspection-patrols/<int:robot_id>/stop', methods=['POST'])
+@login_required
+def api_stop_inspection_patrol(robot_id):
+    """Stop inspection patrol"""
+    if robot_id in active_inspection_patrols:
+        active_inspection_patrols[robot_id].stop()
+        del active_inspection_patrols[robot_id]
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'error': 'No active patrol'}), 404
+
+
+@app.route('/api/yolo-inspection-patrols/<int:robot_id>/status', methods=['GET'])
+@login_required
+def api_get_inspection_status(robot_id):
+    """Get inspection status"""
+    if robot_id in active_inspection_patrols:
+        status = active_inspection_patrols[robot_id].get_status()
+        return jsonify({'success': True, 'status': status})
+    return jsonify({'success': False, 'status': {'state': 'idle'}}), 200
+
+
+@app.route('/api/yolo-inspection-sessions', methods=['GET'])
+@login_required
+def api_get_inspection_sessions():
+    """Get inspection sessions"""
+    robot_id = request.args.get('robot_id', type=int)
+    limit = request.args.get('limit', 50, type=int)
+    sessions = db.get_inspection_sessions(robot_id=robot_id, limit=limit)
+    return jsonify({'success': True, 'sessions': sessions})
+
+
+@app.route('/api/yolo-waypoint-inspections/<int:session_id>', methods=['GET'])
+@login_required
+def api_get_waypoint_inspections(session_id):
+    """Get waypoint inspections for a session"""
+    inspections = db.get_waypoint_inspections(session_id)
+    return jsonify({'success': True, 'inspections': inspections})
+
+
+@app.route('/inspection-patrol')
+@login_required
+def inspection_patrol():
+    """Inspection patrol page"""
+    return render_template('inspection_patrol.html')
+
+
 # Register additional API routes
 register_violation_routes(app, socketio, login_required, get_yolo_state=lambda: yolo_state)
 register_schedule_routes(app, login_required, patrol_manager, mqtt_manager)

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}YOLO Inspection Patrol{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-shield-check"></i> YOLO Inspection Patrol</h2>
+
+    <!-- Route Builder -->
+    <div class="card mb-3">
+        <div class="card-header"><h5>Create Inspection Route</h5></div>
+        <div class="card-body">
+            <select class="form-select mb-2" id="robotSelect">
+                <option value="">Select robot...</option>
+                {% for robot in robots %}
+                <option value="{{ robot.id }}">{{ robot.name }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary mb-3" id="fetchWaypointsBtn">Fetch Waypoints</button>
+            <div id="waypointList"></div>
+            <input type="text" class="form-control mb-2" id="routeName" placeholder="Route name">
+            <button class="btn btn-success" id="saveRouteBtn">Save Route</button>
+        </div>
+    </div>
+
+    <!-- Patrol Control -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><h5>Start Inspection</h5></div>
+                <div class="card-body">
+                    <select class="form-select mb-2" id="routeSelect"></select>
+                    <button class="btn btn-success btn-lg w-100 mb-2" id="startBtn">Start Inspection</button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-danger" id="stopBtn" disabled>Stop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><h5>Status</h5></div>
+                <div class="card-body">
+                    <p>State: <span id="state" class="badge bg-secondary">Idle</span></p>
+                    <p>Pipeline: <span id="pipeline" class="badge bg-secondary">Unknown</span></p>
+                    <p>Waypoint: <span id="waypoint">-</span></p>
+                    <p>Progress: <span id="progress">-</span></p>
+                    <p>Violations: <span id="violations" class="badge bg-danger">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="card">
+        <div class="card-header"><h5>Inspection Sessions</h5></div>
+        <div class="card-body">
+            <table class="table">
+                <thead><tr><th>ID</th><th>Route</th><th>Started</th><th>Status</th><th>Violations</th></tr></thead>
+                <tbody id="sessionsTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/inspection_patrol.js') }}"></script>
+{% endblock %}
