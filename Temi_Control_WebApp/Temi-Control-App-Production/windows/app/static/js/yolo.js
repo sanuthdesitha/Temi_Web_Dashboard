@@ -248,18 +248,29 @@
     function setPipelineStatusUI(state) {
         pipelineState = state;
         const badge = document.getElementById('pipelineStatusBadge');
-        if (!badge) return;
+        if (badge) {
+            const stateMap = {
+                'running':  { text: 'Pipeline: Running',  cls: 'bg-success' },
+                'paused':   { text: 'Pipeline: Paused',   cls: 'bg-warning text-dark' },
+                'stopped':  { text: 'Pipeline: Stopped',  cls: 'bg-danger' },
+                'unknown':  { text: 'Pipeline: Unknown',  cls: 'bg-secondary' }
+            };
+            const info = stateMap[state] || stateMap['unknown'];
+            badge.textContent = info.text;
+            badge.className = 'badge ' + info.cls;
+        }
 
-        const stateMap = {
-            'running':  { text: 'Pipeline: Running',  cls: 'bg-success' },
-            'paused':   { text: 'Pipeline: Paused',   cls: 'bg-warning text-dark' },
-            'stopped':  { text: 'Pipeline: Stopped',  cls: 'bg-danger' },
-            'unknown':  { text: 'Pipeline: Unknown',  cls: 'bg-secondary' }
-        };
-
-        const info = stateMap[state] || stateMap['unknown'];
-        badge.textContent = info.text;
-        badge.className = 'badge ' + info.cls;
+        // Toggle Pause/Resume button
+        var pauseBtn = document.getElementById('pipelinePauseBtn');
+        if (pauseBtn) {
+            if (state === 'paused') {
+                pauseBtn.innerHTML = '<i class="bi bi-play-circle"></i> Resume Pipeline';
+                pauseBtn.className = 'btn btn-success';
+            } else {
+                pauseBtn.innerHTML = '<i class="bi bi-pause-circle"></i> Pause Pipeline';
+                pauseBtn.className = 'btn btn-warning';
+            }
+        }
     }
 
     function showPipelineResult(message, isSuccess) {
@@ -275,9 +286,16 @@
         setTimeout(function() { container.style.display = 'none'; }, 5000);
     }
 
-    function sendPipelineCommand(command) {
-        const btnId = 'pipeline' + command.charAt(0).toUpperCase() + command.slice(1) + 'Btn';
-        const btn = document.getElementById(btnId);
+    function sendPipelineCommand(command, displayLabel) {
+        var label = displayLabel || command;
+        // For resume, the actual MQTT command is "start" but the triggering button is pipelinePauseBtn
+        var btn;
+        if (label === 'resume') {
+            btn = document.getElementById('pipelinePauseBtn');
+        } else {
+            var btnId = 'pipeline' + command.charAt(0).toUpperCase() + command.slice(1) + 'Btn';
+            btn = document.getElementById(btnId);
+        }
         if (btn) btn.disabled = true;
 
         fetch('/api/yolo/pipeline/control', {
@@ -288,7 +306,7 @@
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 if (res.success) {
-                    showPipelineResult('Command "' + command + '" sent successfully via Cloud MQTT', true);
+                    showPipelineResult('Command "' + label + '" sent successfully via Cloud MQTT', true);
                     if (command === 'start' || command === 'restart') setPipelineStatusUI('running');
                     else if (command === 'pause') setPipelineStatusUI('paused');
                     else if (command === 'stop') setPipelineStatusUI('stopped');
@@ -466,7 +484,14 @@
         if (pipelineStartBtn) pipelineStartBtn.addEventListener('click', function() { requestPipelineCommand('start'); });
 
         var pipelinePauseBtn = document.getElementById('pipelinePauseBtn');
-        if (pipelinePauseBtn) pipelinePauseBtn.addEventListener('click', function() { requestPipelineCommand('pause'); });
+        if (pipelinePauseBtn) pipelinePauseBtn.addEventListener('click', function() {
+            if (pipelineState === 'paused') {
+                // Currently paused - send "start" to resume, no confirmation needed
+                sendPipelineCommand('start', 'resume');
+            } else {
+                requestPipelineCommand('pause');
+            }
+        });
 
         var pipelineStopBtn = document.getElementById('pipelineStopBtn');
         if (pipelineStopBtn) pipelineStopBtn.addEventListener('click', function() { requestPipelineCommand('stop'); });
